@@ -98,6 +98,10 @@ class CompositeDiscovery:
         if isinstance(endpoint, RemoteEndpoint):
             self.remote.register(endpoint.service.service_name.split('.'), endpoint.remote_params)
 
+    # TODO: transport info should go from process
+    def get_transport_class(self, name):
+        return self.local.get_transport_class(name)
+
 
 class SimpleDictDiscovery(RemoteDiscovery):
     def __init__(self, conf):

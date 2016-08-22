@@ -1,16 +1,3 @@
-class Endpoint:
-    def __init__(self, service):
-        self.service = service
-        self.started = False
-        self.stopped = False
-
-    def on_start(self):
-        self.started = True
-
-    def on_stop(self):
-        self.stopped = True
-
-
 class Transport:
     def __init__(self, discovery, endpoint, params):
         self.discovery = discovery
@@ -30,12 +17,33 @@ class Transport:
         return getattr(self.endpoint, method)(ctx, *args, **kwargs)
 
 
+class Endpoint:
+
+    def __init__(self, service):
+        self.service = service
+        self.started = False
+        self.stopped = False
+
+    def on_start(self):
+        self.started = True
+
+    def on_stop(self):
+        self.stopped = True
+
+
 class ProxyEndpoint(Endpoint):
     def __init__(self, discovery, name, params):
         self.name = name
-        self.transport = params['transport'](discovery, self, params)
+        self.params = params
+        self.discovery = discovery
+        transportClass = discovery.get_transport_class(params['transport'])
+        self.transport = transportClass(discovery, self, params)
+
 
     def __getattr__(self, name):
+        if name in ('name', 'params', 'discovery', 'transport'):
+            return object.__getattribute__(self, name)
+
         def callable(ctx, *args, **kwargs):
             ret = self.transport.rpc_call(name, ctx, *args, **kwargs)
             return ret
@@ -55,11 +63,16 @@ class RemoteEndpoint(LocalEndpoint):
     """
     Listen some remote transport for incoming messages
     """
+
     def __init__(self, discovery, service, params):
         self.service = service
         self.params = params
         self.remote_params = params
-        self.transport = params['transport'](discovery, self, params)
+        if 'transport' in params:
+            self.transportClass = discovery.get_transport_class(params['transport'])
+        else:
+            self.transportClass = Transport
+        self.transport = self.transportClass(discovery, self, params)
 
     def on_start(self):
         self.transport.on_start()

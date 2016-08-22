@@ -45,7 +45,7 @@ class TestServiceGroup(ServiceGroup):
 
             self.instances.append(service)
             for ep_conf in data['endpoints']:
-                ep = RemoteEndpoint(self.discovery, service, ep_conf['params'])
+                ep = ep_conf['endpoint'](self.discovery, service, ep_conf['params'])
                 ep.on_start()
                 self.endpoints.append(ep)
                 self.discovery.register(ep)
@@ -60,14 +60,19 @@ class DummyTransport(Transport):
             self.storage[params['id']] = self
 
     def rpc_call(self, method, ctx, *args, **kwargs):
+        print('Storage: {}'.format(self.storage))
         remote_ep = self.storage[self.params['id']]
         return remote_ep.handle_call(method, ctx, *args, **kwargs)
 
 
+class DummyRemoteEndpoint(RemoteEndpoint):
+    transportClass = DummyTransport
+
+
 class DummyServiceGroup(TestServiceGroup):
     services = [{'service': DummyTracer,
-                 'endpoints': [{'endpoint': RemoteEndpoint,
-                                'params': {'transport': DummyTransport, 'id': 1}}]}]
+                 'endpoints': [{'endpoint': DummyRemoteEndpoint,
+                                'params': {'id': 1, 'transport': 'dummy'}}]}]
 
 
 class ChainedEchoService(Service):
@@ -80,8 +85,8 @@ class ChainedEchoService(Service):
 
 class ChainedServiceGroup(TestServiceGroup):
     services = [{'service': ChainedEchoService,
-                 'endpoints': [{'endpoint': RemoteEndpoint,
-                                'params': {'transport': DummyTransport, 'id': 1}}]}]
+                 'endpoints': [{'endpoint': DummyRemoteEndpoint,
+                                'params': {'id': 2, 'transport': 'dummy'}}]}]
 
 
 class EchoService(Service):
@@ -136,6 +141,13 @@ class TestRemoteDiscovery(SimpleDictDiscovery):
         pass
 
 
+class TestLocalDiscovery(LocalDiscovery):
+    transports = {'dummy': DummyTransport}
+
+    def get_transport_class(self, name):
+        return self.transports[name]
+
+
 class MultiProcessTestCase(TestCase):
     def setUp(self):
         self.recorder = InMemoryRecorder()
@@ -148,7 +160,7 @@ class MultiProcessTestCase(TestCase):
         self.p2.start()
 
     def create_process(self, recorder, sg):
-        discovery = CompositeDiscovery(LocalDiscovery(), self.remote)
+        discovery = CompositeDiscovery(TestLocalDiscovery(), self.remote)
         discovery.tracer = BasicTracer(recorder)
         proc = TestProcess(discovery)
         proc.service_groups = [sg]
@@ -157,5 +169,4 @@ class MultiProcessTestCase(TestCase):
     def test_call(self):
         context = self.p1.create_context()
         result = context.rpc.chained_echo.echo('hello')
-
         self.assertEqual(result, 'hello')
