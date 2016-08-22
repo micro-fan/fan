@@ -1,0 +1,7 @@
+green==2.5.1
+ipython==5.0.0
+# install from master until version 0.4.4 is out
+git+https://github.com/python/mypy.git
+typed_ast==0.5.5
+opentracing
+basictracer
