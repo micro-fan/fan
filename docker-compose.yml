@@ -5,8 +5,5 @@ services:
     image: redis:2.8
 
   fan:
-    image: fan
-    command: sleep 999999
-
-    volumes:
-      - .:/code
+    context: .
+    dockerfile: Dockerfile
