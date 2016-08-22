@@ -6,3 +6,4 @@ services:
 
   fan:
     build: .
+    command: green

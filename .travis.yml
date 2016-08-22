@@ -9,4 +9,4 @@ install:
   - docker-compose build
 
 script:
-  - docker-compose up
+  - travis-runner.sh
