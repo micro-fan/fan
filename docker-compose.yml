@@ -5,5 +5,4 @@ services:
     image: redis:2.8
 
   fan:
-    context: .
-    dockerfile: Dockerfile
+    build: .
