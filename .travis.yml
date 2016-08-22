@@ -5,9 +5,8 @@ language: python
 services:
   - docker
 
-before_install:
-- docker pull ubuntu:xenial
-- docker run ubuntu:xenial /bin/sh -c "cd /root/code"
+install:
+  - docker-compose build
 
 script:
-- green
+  - docker-compose up
