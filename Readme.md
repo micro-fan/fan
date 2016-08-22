@@ -1,3 +1,5 @@
+# Fan is a microservice framework [WARNING IN DEVELOPMENT]
+
 # Use cases list
 
 ## Service update strategies
