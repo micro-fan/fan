@@ -1,0 +1,12 @@
+version: '2'
+
+services:
+  redis:
+    image: redis:2.8
+
+  fan:
+    image: fan
+    command: sleep 999999
+
+    volumes:
+      - .:/code
