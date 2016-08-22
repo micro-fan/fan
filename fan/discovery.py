@@ -28,27 +28,13 @@ def path_get(obj, path):
     return curr
 
 
-class BaseDiscovery:
+class LocalDiscovery:
     """
     Service types:
         singleton - only a single service allowed
         round_robin - any worker can handle request
         shard - only a concrete worker can handle request
     """
-    def get_connection_params(self, conn_name: str) -> dict:
-        raise NotImplementedError
-
-    def register(self, endpoint: Endpoint):
-        raise NotImplementedError
-
-    def subscribe_queue(self, queue: str, obj):
-        raise NotImplementedError
-
-    def unsubscribe_queue(self, queue: str, obj):
-        raise NotImplementedError
-
-
-class LocalDiscovery(BaseDiscovery):
     def __init__(self):
         self.cached_endpoints = {}
 
@@ -66,7 +52,7 @@ class LocalDiscovery(BaseDiscovery):
             return self.cached_endpoints[service_name]
 
 
-class RemoteDiscovery(BaseDiscovery):
+class RemoteDiscovery:
     '''
     Doesn't contain any objects, only hierarchical data with primitive datatypes
     May cache data, but should invalidate cached in distributed deployments
@@ -89,7 +75,7 @@ class RemoteDiscovery(BaseDiscovery):
         raise NotImplementedError
 
 
-class CompositeDiscovery(BaseDiscovery):
+class CompositeDiscovery:
     def __init__(self, local, remote):
         self.local = local
         self.remote = remote
