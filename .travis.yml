@@ -12,4 +12,4 @@ env:
 
 # command to run tests
 script:
-  python django_orm_sugar.py
+  nosetests
