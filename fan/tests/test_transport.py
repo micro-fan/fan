@@ -35,3 +35,7 @@ class TransportCase(TestCase):
         self.discovery.register(ep)
 
         assert ep.transport.test_started
+        l = self.discovery.local
+        r = self.discovery.remote
+        assert l.cached_endpoints[('dummy',)] == ep
+        assert r.cached_endpoints['dummy']['transport'] == DummyTransport

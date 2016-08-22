@@ -67,10 +67,17 @@ class LocalDiscovery(BaseDiscovery):
 
 
 class RemoteDiscovery(BaseDiscovery):
+    '''
+    Doesn't contain any objects, only hierarchical data with primitive datatypes
+    May cache data, but should invalidate cached in distributed deployments
+    '''
     def __init__(self):
         self.cached_endpoints = {}
 
-    def register(self, endpoint: ProxyEndpoint):
+    def register(self, path, config):
+        raise NotImplementedError
+
+    def watch(self, path, callback):
         raise NotImplementedError
 
     def find_endpoint(self, service_name):
@@ -92,9 +99,13 @@ class CompositeDiscovery(BaseDiscovery):
         if local:
             return local
         proxy_cfg = self.remote.find_endpoint(name)
-        ep = ProxyEndpoint(self, name, proxy_cfg)
-        self.local.register(ep)
-        return ep
+        if proxy_cfg:
+            ep = self.create_proxy(name, proxy_cfg)
+            self.local.register(ep)
+            return ep
+
+    def create_proxy(self, name, proxy_cfg):
+        return ProxyEndpoint(self, name, proxy_cfg)
 
     def register(self, endpoint):
         self.local.register(endpoint)
