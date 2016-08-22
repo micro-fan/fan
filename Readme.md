@@ -1,4 +1,4 @@
-# Fan is a microservice framework [WARNING IN DEVELOPMENT]
+# Fan microservice framework [IN DEVELOPMENT] [![Build Status](https://travis-ci.org/tipsi/fan.svg?branch=master)](https://travis-ci.org/tipsi/fan)
 
 # Use cases list
 
