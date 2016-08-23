@@ -5,3 +5,4 @@ git+https://github.com/python/mypy.git
 typed_ast==0.5.5
 opentracing
 basictracer==2.1.0
+aioredis==0.2.8

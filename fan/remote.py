@@ -3,12 +3,14 @@ class Transport:
         self.discovery = discovery
         self.params = params
         self.endpoint = endpoint
+        self.started = False
+        self.stopped = False
 
     def on_start(self):
-        pass
+        self.started = True
 
     def on_stop(self):
-        pass
+        self.stopped = True
 
     def rpc_call(self, ctx, *args, **kwargs):
         raise NotImplementedError
@@ -39,7 +41,6 @@ class ProxyEndpoint(Endpoint):
         transportClass = discovery.get_transport_class(params['transport'])
         self.transport = transportClass(discovery, self, params)
 
-
     def __getattr__(self, name):
         if name in ('name', 'params', 'discovery', 'transport'):
             return object.__getattribute__(self, name)
@@ -48,6 +49,12 @@ class ProxyEndpoint(Endpoint):
             ret = self.transport.rpc_call(name, ctx, *args, **kwargs)
             return ret
         return callable
+
+    def on_start(self):
+        self.transport.on_start()
+
+    def on_stop(self):
+        return self.transport.on_stop()
 
 
 class LocalEndpoint(Endpoint):
@@ -78,4 +85,4 @@ class RemoteEndpoint(LocalEndpoint):
         self.transport.on_start()
 
     def on_stop(self):
-        self.transport.on_stop()
+        return self.transport.on_stop()

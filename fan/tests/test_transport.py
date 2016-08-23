@@ -1,5 +1,5 @@
 from unittest import TestCase
-from fan.remote import RemoteEndpoint, ProxyEndpoint, Transport
+from fan.remote import RemoteEndpoint, Transport
 from fan.discovery import SimpleDictDiscovery, CompositeDiscovery, LocalDiscovery
 from fan.service import Service, endpoint
 
