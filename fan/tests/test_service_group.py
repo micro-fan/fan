@@ -170,3 +170,4 @@ class MultiProcessTestCase(TestCase):
         context = self.p1.create_context()
         result = context.rpc.chained_echo.echo('hello')
         self.assertEqual(result, 'hello')
+        self.assertEquals(len(self.recorder.get_spans()), 2)

@@ -21,15 +21,17 @@ class Context:
 
 
 class TracedContext(Context):
-    def __init__(self, discovery, parent=None):
+    def __init__(self, discovery, parent=None, name=None):
         super().__init__(discovery, parent)
-        if parent:
-            self.span = discovery.tracer.start_span(child_of=parent.span.context)
+        if isinstance(parent, Context):
+            parent_context = parent.span.context
         else:
-            self.span = discovery.tracer.start_span()
+            parent_context = parent
+        self.span = discovery.tracer.start_span(child_of=parent_context,
+                                                operation_name=name)
 
-    def create_child_context(self):
-        return TracedContext(self.discovery, self)
+    def create_child_context(self, name=None):
+        return TracedContext(self.discovery, self, name)
 
     def pre_call(self):
         pass

@@ -1,4 +1,5 @@
 import asyncio
+import os
 from unittest import TestCase
 
 from basictracer import BasicTracer
@@ -28,7 +29,7 @@ class DummyService(Service):
 
     @endpoint
     def ping(self, ctx):
-        print('Call ping endpoint')
+        print('Call ping endpoint {}'.format(ctx.span.context.trace_id))
         return 'pong'
 
 
@@ -61,7 +62,7 @@ class RedisCase(TestCase):
         return TracedContext(discovery)
 
     async def _test_remote_call(self):
-        params = {'host': 'redis',
+        params = {'host': os.environ.get('REDIS_HOST', 'redis'),
                   'port': 6379,
                   'queue': 'test_redis',
                   'transport': 'redis'}
@@ -74,11 +75,15 @@ class RedisCase(TestCase):
         pep.on_start()
 
         print(self.dict_discovery.cached_endpoints)
-        res = await self.ctx.rpc.dummy.ping()
+        ctx = self.ctx
+        res = await ctx.rpc.dummy.ping()
+        ctx.span.finish()
         self.assertEqual(res, 'pong')
 
     def test_remote_call(self):
         self.loop.run_until_complete(self._test_remote_call())
+        self.assertEquals(len(self.recorder.get_spans()), 2)
+        print('SPANS: {}'.format([(x.context.span_id, x.context.trace_id) for x in self.recorder.get_spans()]))
 
     def tearDown(self):
         self.loop.close()

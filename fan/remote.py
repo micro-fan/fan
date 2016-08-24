@@ -42,10 +42,9 @@ class ProxyEndpoint(Endpoint):
         self.transport = transportClass(discovery, self, params)
 
     def __getattr__(self, name):
-        if name in ('name', 'params', 'discovery', 'transport'):
-            return object.__getattribute__(self, name)
-
         def callable(ctx, *args, **kwargs):
+            if not self.transport.started:
+                self.transport.on_start()
             ret = self.transport.rpc_call(name, ctx, *args, **kwargs)
             return ret
         return callable
