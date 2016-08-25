@@ -21,9 +21,34 @@ class AIOTransport(Transport):
                'method': name,
                'args': args,
                'kwargs': kwargs}
-        return await self._inner_call(msg)
+        return await self.rpc_inner_call(msg)
 
     async def _inner_call(self, msg):
+        """
+        implemente here concrete interaction with pub/sub transport level
+        """
+        raise NotImplementedError
+
+
+class AIOQueueBasedTransport:
+    async def on_start(self):
+        await self.sub_prepare()
+        await self.pub_prepare()
+
+    async def on_stop(self):
+        await self.pub_stop()
+        await self.sub_stop()
+
+    def sub_prepare(self):
+        raise NotImplementedError
+
+    def sub_stop(self):
+        raise NotImplementedError
+
+    def pub_prepare(self):
+        raise NotImplementedError
+
+    def pub_stop(self):
         raise NotImplementedError
 
 
