@@ -4,7 +4,8 @@
 docker-compose up --abort-on-container-exit
 
 # check last docker-compose status
-CODE=`docker-compose ps -q | xargs docker inspect -f '{{ .State.ExitCode }}' | grep -v 0 | wc -l | tr -d ' '`
+# rabbit stops with 143 exit code
+CODE=`docker-compose ps -q | xargs docker inspect -f '{{ .State.ExitCode }}' | grep -vE '(0|143)' | wc -l | tr -d ' '`
 
 echo "Tests completed with exit code $CODE"
 
