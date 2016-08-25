@@ -53,7 +53,7 @@ class RedisCase(TestCase):
         l = self.discovery.local
         r = self.discovery.remote
         assert l.cached_endpoints[('dummy',)] == ep
-        assert r.cached_endpoints['dummy'] == {}
+        assert r.data['dummy'] == {}
 
     @property
     def ctx(self):
@@ -74,7 +74,6 @@ class RedisCase(TestCase):
         pep = ProxyEndpoint(self.discovery, 'dummy', params)
         pep.on_start()
 
-        print(self.dict_discovery.cached_endpoints)
         ctx = self.ctx
         res = await ctx.rpc.dummy.ping()
         ctx.span.finish()

@@ -11,14 +11,7 @@ from fan.remote import LocalEndpoint, RemoteEndpoint, Transport
 
 
 def get_simple_discovery():
-    conf = {'connections': [{'connection': 'main_redis',
-                             'transport': 'redis',
-                             'params': {'host': 'localhost',
-                                        'port': '6789',
-                                        'db': '0'}},
-                            {'connection': 'main',
-                             'transport': 'stringio',
-                             'params': {'bucket': 'default'}}]}
+    conf = {}
     return CompositeDiscovery(LocalDiscovery(), SimpleDictDiscovery(conf))
 
 

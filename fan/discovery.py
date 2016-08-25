@@ -58,20 +58,21 @@ class RemoteDiscovery:
     May cache data, but should invalidate cached in distributed deployments
     '''
     def __init__(self):
-        self.cached_endpoints = {}
+        self.watchers = {}
 
     def register(self, path, config):
+        raise NotImplementedError
+
+    def find_endpoint(self, service_name):
+        return self.find_remote_endpoint(service_name)
+
+    def find_remote_endpoint(self, service_name):
         raise NotImplementedError
 
     def watch(self, path, callback):
         raise NotImplementedError
 
-    def find_endpoint(self, service_name):
-        if service_name in self.cached_endpoints:
-            return self.cached_endpoints[service_name]
-        return self.find_remote_endpoint(service_name)
-
-    def find_remote_endpoint(self, service_name):
+    def unwatch(self, path, callback):
         raise NotImplementedError
 
 
@@ -106,32 +107,16 @@ class CompositeDiscovery:
 class SimpleDictDiscovery(RemoteDiscovery):
     def __init__(self, conf):
         super().__init__()
-        self.connections = {}
-
-        for conn_dict in conf.get('connections', []):
-            assert 'transport' in conn_dict, '"transport" param is required in connection dict'
-            assert 'connection' in conn_dict, '"connection" param is required in connection dict'
-            assert 'params' in conn_dict, '"param" param is required in connection dict'
-            connection = conn_dict['connection']
-            self.connections[connection] = conn_dict
-
-        for proxy_dict in conf.get('proxy_endpoints', []):
-            assert 'transport' in proxy_dict, '"transport" is required in proxy dict'
-            assert 'endpoint' in proxy_dict, '"endpoint" param is required in proxy dict'
-            assert 'params' in proxy_dict, '"params" param is required in proxy dict'
-
-            self.register_remote(proxy_dict['endpoint'], proxy_dict['transport'],
-                                 proxy_dict['params'])
+        self.data = conf
 
     def register(self, path, data):
-        path_set(self.cached_endpoints, path, data)
+        path_set(self.data, path, data)
 
     def find_endpoint(self, path):
-        return path_get(self.cached_endpoints, path)
+        return path_get(self.data, path)
 
-    def get_connection_params(self, conn_name: str):
-        if conn_name in self.connections:
-            return self.connections
-        else:
-            raise RuntimeError('"{}" connection is missing '
-                               'in simple dict discovery'.format(conn_name))
+    def watch(self, path, cb):
+        pass
+
+    def unwatch(self, path, cb):
+        pass

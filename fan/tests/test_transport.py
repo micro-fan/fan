@@ -49,4 +49,4 @@ class TransportCase(TestCase):
         l = self.discovery.local
         r = self.discovery.remote
         assert l.cached_endpoints[('dummy',)] == ep
-        assert r.cached_endpoints['dummy'] == {'transport': 'dummy'}
+        assert r.data['dummy'] == {'transport': 'dummy'}

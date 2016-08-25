@@ -31,6 +31,9 @@ class AIOTransport(Transport):
 
 
 class AIOQueueBasedTransport:
+    """
+    Mixin to build queue based RPC
+    """
     async def on_start(self):
         await self.sub_prepare()
         await self.pub_prepare()
