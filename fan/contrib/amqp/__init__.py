@@ -1,6 +1,7 @@
 import asyncio
 import asynqp
 import re
+import time
 from types import CoroutineType
 
 from basictracer.context import SpanContext
@@ -18,10 +19,15 @@ class AMQPTransport(AIOQueueBasedTransport, AIOTransport):
         if hasattr(self, 'conn'):
             return
         params = self.params
-        self.conn = await asynqp.connect(params.get('host', 'localhost'),
-                                         params.get('port', 5672),
-                                         username=params.get('user', 'guest'),
-                                         password=params.get('password', 'guest'))
+        while True:
+            try:
+                self.conn = await asynqp.connect(params.get('host', 'localhost'),
+                                                 params.get('port', 5672),
+                                                 username=params.get('user', 'guest'),
+                                                 password=params.get('password', 'guest'))
+                break
+            except OSError:
+                time.sleep(0.2)
 
     async def sub_prepare(self):
         params = self.params
