@@ -12,6 +12,11 @@ services:
       - 15672:15672
       - 5672:5672
 
+  zk:
+    image: jplock/zookeeper:3.5.2-alpha
+    ports:
+      - 2181:2181
+
   fan:
     build: .
     command: green
