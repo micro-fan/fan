@@ -20,7 +20,7 @@ class Transport:
 
 
 class Endpoint:
-
+    name = None  # type: str
     def __init__(self, service):
         self.service = service
         self.started = False
@@ -60,6 +60,10 @@ class LocalEndpoint(Endpoint):
     """
     For in-process communications only
     """
+    def __init__(self, service):
+        super().__init__(service)
+        self.name = service.service_name.split('.')
+
     def __getattr__(self, name):
         print('Obj: {} {}'.format(self.service, name))
         return getattr(self.service, self.service._rpc[name])
