@@ -33,7 +33,7 @@ class DummyService(Service):
         return 'pong'
 
 
-class RedisCase(TestCase):
+class AMQPCase(TestCase):
     def setUp(self):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)

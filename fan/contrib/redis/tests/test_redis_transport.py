@@ -2,6 +2,7 @@ import asyncio
 import os
 from unittest import TestCase
 
+
 from basictracer import BasicTracer
 from basictracer.recorder import InMemoryRecorder
 

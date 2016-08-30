@@ -13,6 +13,7 @@ from fan.contrib.aio.remote import AIOTransport, AIOQueueBasedTransport
 
 asynqp.queue.VALID_QUEUE_NAME_RE = re.compile('')
 
+
 class AMQPTransport(AIOQueueBasedTransport, AIOTransport):
 
     async def ensure_connection(self):
