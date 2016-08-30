@@ -1,5 +1,4 @@
 import asyncio
-from tornado.platform.asyncio import AsyncIOMainLoop, to_asyncio_future
 
 import os
 from unittest import TestCase
@@ -11,7 +10,6 @@ class TestZK(TestCase):
     def setUp(self):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
-        AsyncIOMainLoop().install()
 
         self.remote = ZKDiscovery(os.environ.get('ZK_HOST', 'zk:2181'))
 
