@@ -51,7 +51,6 @@ class AMQPTransport(AIOQueueBasedTransport, AIOTransport):
         self.queue = queue
         await queue.consume(self.deliver, no_ack=not self.remote)
 
-
     async def pub_prepare(self):
         self.pub = await self.conn.open_channel()
 

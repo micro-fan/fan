@@ -16,14 +16,16 @@ async def tornado_result(future):
 
 
 class ZKDiscovery(RemoteDiscovery):
-    def __init__(self, zk_path):
+    def __init__(self, zk_path, chroot=None):
         super().__init__()
-        self.zk = ZKClient(zk_path)
+        self.zk = ZKClient(zk_path, chroot)
 
     async def on_start(self):
         await self.zk.start()
+        if not await self.zk.exists('/endpoints'):
+            await self.zk.create('/endpoints')
 
-    def register(self, path, config):
+    def register(self, endpoint):
         pass
 
     def find_endpoint(self, service_name):

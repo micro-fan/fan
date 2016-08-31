@@ -60,7 +60,7 @@ class RemoteDiscovery:
     def __init__(self):
         self.watchers = {}
 
-    def register(self, path, config):
+    def register(self, endpoint):
         raise NotImplementedError
 
     def find_endpoint(self, service_name):
@@ -97,7 +97,7 @@ class CompositeDiscovery:
     def register(self, endpoint):
         self.local.register(endpoint)
         if isinstance(endpoint, RemoteEndpoint):
-            self.remote.register(endpoint.service.service_name.split('.'), endpoint.remote_params)
+            self.remote.register(endpoint)
 
     # TODO: transport info should go from process
     def get_transport_class(self, name):
@@ -109,7 +109,8 @@ class SimpleDictDiscovery(RemoteDiscovery):
         super().__init__()
         self.data = conf
 
-    def register(self, path, data):
+    def register(self, endpoint):
+        path, data = endpoint.service.service_name.split('.'), endpoint.remote_params
         path_set(self.data, path, data)
 
     def find_endpoint(self, path):

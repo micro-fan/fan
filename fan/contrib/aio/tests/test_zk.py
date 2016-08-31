@@ -11,7 +11,7 @@ class TestZK(TestCase):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
 
-        self.remote = ZKDiscovery(os.environ.get('ZK_HOST', 'zk:2181'))
+        self.remote = ZKDiscovery(os.environ.get('ZK_HOST', 'zk:2181'), chroot='/test_fan')
 
     async def _init_inner(self):
         await self.remote.on_start()
