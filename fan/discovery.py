@@ -1,3 +1,5 @@
+import logging
+
 from fan.remote import LocalEndpoint, Endpoint, ProxyEndpoint, RemoteEndpoint
 
 
@@ -36,6 +38,7 @@ class LocalDiscovery:
         shard - only a concrete worker can handle request
     """
     def __init__(self):
+        self.log = logging.getLogger(self.__class__.__name__)
         self.cached_endpoints = {}
 
     def register(self, endpoint: Endpoint):
@@ -58,6 +61,7 @@ class RemoteDiscovery:
     May cache data, but should invalidate cached in distributed deployments
     '''
     def __init__(self):
+        self.log = logging.getLogger(self.__class__.__name__)
         self.watchers = {}
 
     def register(self, endpoint):
@@ -78,6 +82,7 @@ class RemoteDiscovery:
 
 class CompositeDiscovery:
     def __init__(self, local, remote):
+        self.log = logging.getLogger(self.__class__.__name__)
         self.local = local
         self.remote = remote
 

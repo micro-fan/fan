@@ -16,7 +16,7 @@ class AIOTransport(Transport):
         context_headers = {'span_id': c.span_id,
                            'trace_id': c.trace_id,
                            'sampled': c.sampled}
-        print('CTX: {}'.format(context_headers))
+        self.log.debug('CTX: {}'.format(context_headers))
         msg = {'context_headers': context_headers,
                'method': name,
                'args': args,
@@ -62,7 +62,7 @@ class AIOProxyEndpoint(ProxyEndpoint):
             if not self.transport.started:
                 await self.transport.on_start()
             ret = await self.transport.rpc_call(name, ctx, *args, **kwargs)
-            print('RPC resp: {}'.format(ret))
+            self.log.debug('RPC resp: {}'.format(ret))
             return ret
         return callable
 

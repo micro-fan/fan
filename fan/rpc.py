@@ -1,4 +1,9 @@
+import logging
+
+
 class Caller:
+    log = logging.getLogger('Caller')
+
     def __init__(self, context, name):
         self.context = context
         self.call_path = [name]
@@ -8,9 +13,9 @@ class Caller:
         return self
 
     def __call__(self, *args, **kwargs):
-        print('Generate call: {} {} {}'.format(self.call_path, args, kwargs))
+        self.log.debug('Generate call: {} {} {}'.format(self.call_path, args, kwargs))
         endpoint = self.context.discovery.find_endpoint(tuple(self.call_path[:-1]))
-        print('Endpoint: {}'.format(endpoint))
+        self.log.debug('Endpoint: {}'.format(endpoint))
         if endpoint:
             handler = self.find_handler(endpoint)
             try:
@@ -20,7 +25,7 @@ class Caller:
                 self.context.post_call()
 
     def find_handler(self, ep):
-        print('EP: {}'.format(ep))
+        self.log.debug('EP: {}'.format(ep))
         return getattr(ep, self.call_path[-1])
 
 

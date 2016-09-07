@@ -15,7 +15,6 @@ asynqp.queue.VALID_QUEUE_NAME_RE = re.compile('')
 
 
 class AMQPTransport(AIOQueueBasedTransport, AIOTransport):
-
     async def ensure_connection(self):
         if hasattr(self, 'conn'):
             return
@@ -38,7 +37,7 @@ class AMQPTransport(AIOQueueBasedTransport, AIOTransport):
         self.default_exchange = await self.sub.declare_exchange('', 'direct')
         self.exchange = await self.sub.declare_exchange(params.get('exchange', ''),
                                                         params.get('exchange_type', 'direct'))
-        print('Subscribe...')
+        self.log.debug('Subscribe...')
         if self.remote:
             queue_name = params['queue']
             queue = await self.sub.declare_queue(queue_name)
@@ -62,7 +61,7 @@ class AMQPTransport(AIOQueueBasedTransport, AIOTransport):
         await self.pub.close()
 
     async def on_start(self):
-        print('Start amqp')
+        self.log.info('Start amqp')
         await super().on_start()
 
     async def rpc_inner_call(self, msg):
@@ -75,24 +74,24 @@ class AMQPTransport(AIOQueueBasedTransport, AIOTransport):
                                   # expiration=str(time.time()+10),
                                   reply_to='amq.rabbitmq.reply-to',
                                   correlation_id=str(ctx['span_id']))
-        print('Publish message: {} {}'.format(self.exchange, self.routing_key))
+        self.log.debug('Publish message: {} {}'.format(self.exchange, self.routing_key))
         self.exchange.publish(amqp_msg, self.routing_key)
         rep = await self.responses.get()
         return rep['response']
 
     def deliver(self, msg):
-        print('DELIVERED: {}'.format(msg))
+        self.log.debug('DELIVERED: {}'.format(msg))
         self.loop.create_task(self.read_loop(msg))
 
     async def read_loop(self, raw_msg):
-        print('Got message: {} Q[{}]'.format(raw_msg, self.queue.name))
+        self.log.debug('Got message: {} Q[{}]'.format(raw_msg, self.queue.name))
 
         msg = raw_msg.json()
         ctx_headers = msg['context_headers']
         parent_ctx = SpanContext(**ctx_headers)
         method = msg['method']
         ctx = Context(self.discovery, parent_ctx, method)
-        print('CTX: {} {}'.format(ctx.span.context.trace_id, raw_msg.correlation_id))
+        self.log.debug('CTX: {} {}'.format(ctx.span.context.trace_id, raw_msg.correlation_id))
         args = msg.get('args', ())
         kwargs = msg.get('kwargs', {})
         if self.remote:
@@ -101,7 +100,7 @@ class AMQPTransport(AIOQueueBasedTransport, AIOTransport):
                 resp = await hc
             else:
                 resp = hc
-            print('Send resp ==> : {}'.format(resp))
+            self.log.debug('Send resp ==> : {}'.format(resp))
             resp = asynqp.Message({'context_headers': msg['context_headers'],
                                    'method': msg['method'],
                                    'response': resp},
@@ -109,7 +108,7 @@ class AMQPTransport(AIOQueueBasedTransport, AIOTransport):
             self.default_exchange.publish(resp, raw_msg.reply_to, mandatory=False)
             raw_msg.ack()
         else:
-            print('Put into responses {}'.format(self.responses))
+            self.log.debug('Put into responses {}'.format(self.responses))
             await self.responses.put(msg)
 
 

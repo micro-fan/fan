@@ -6,15 +6,6 @@ from fan.discovery import CompositeDiscovery, RemoteDiscovery
 from fan.contrib.aio.remote import AIOProxyEndpoint
 
 
-async def tornado_result(future):
-    q = asyncio.Queue()
-
-    def _inner(result):
-        q.put(result)
-    future.add_done_callback(_inner)
-    return await q.get()
-
-
 class ZKDiscovery(RemoteDiscovery):
     def __init__(self, zk_path, chroot=None):
         super().__init__()
@@ -26,7 +17,7 @@ class ZKDiscovery(RemoteDiscovery):
             await self.zk.create('/endpoints')
 
     def register(self, endpoint):
-        pass
+        name = endpoint.name
 
     def find_endpoint(self, service_name):
         pass

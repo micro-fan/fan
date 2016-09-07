@@ -1,5 +1,9 @@
+import logging
+
+
 class Transport:
     def __init__(self, discovery, endpoint, params):
+        self.log = logging.getLogger(self.__class__.__name__)
         self.discovery = discovery
         self.params = params
         self.endpoint = endpoint
@@ -21,7 +25,9 @@ class Transport:
 
 class Endpoint:
     name = None  # type: str
+
     def __init__(self, service):
+        self.log = logging.getLogger(self.__class__.__name__)
         self.service = service
         self.started = False
         self.stopped = False
@@ -35,6 +41,7 @@ class Endpoint:
 
 class ProxyEndpoint(Endpoint):
     def __init__(self, discovery, name, params):
+        self.log = logging.getLogger(self.__class__.__name__)
         self.name = name
         self.params = params
         self.discovery = discovery
@@ -63,9 +70,10 @@ class LocalEndpoint(Endpoint):
     def __init__(self, service):
         super().__init__(service)
         self.name = service.service_name.split('.')
+        self.log = logging.getLogger(self.__class__.__name__)
 
     def __getattr__(self, name):
-        print('Obj: {} {}'.format(self.service, name))
+        # self.log.debug('Obj: {} {}'.format(self.service, name))
         return getattr(self.service, self.service._rpc[name])
 
 
@@ -83,6 +91,10 @@ class RemoteEndpoint(LocalEndpoint):
         else:
             self.transportClass = Transport
         self.transport = self.transportClass(discovery, self, params)
+
+    @property
+    def name(self):
+        return self.service.service_name
 
     def on_start(self):
         self.transport.on_start()

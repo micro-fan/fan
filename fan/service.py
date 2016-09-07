@@ -1,3 +1,4 @@
+import logging
 from functools import wraps
 from types import FunctionType
 from typing import List, Set, Any
@@ -13,6 +14,7 @@ class ServiceGroup:
     services = []  # type: List[Any]
 
     def __init__(self, discovery):
+        self.log = logging.getLogger(self.__class__.__name__)
         self.discovery = discovery
         self.instances = []
 
@@ -37,6 +39,8 @@ class ServiceGroup:
 
 
 class ServiceMeta(type):
+    log = logging.getLogger('ServiceMeta')
+
     def run_asserts(name, attrs):
         if name == 'Service':
             return
@@ -61,7 +65,7 @@ class ServiceMeta(type):
         r['_meta'] = {'name': tuple(svc.service_name.split('.'))}
 
     def __new__(cls, name, bases, attrs, **kwargs):
-        print('cls: {} n: {} b: {} A: {}'.format(cls, name, bases, attrs, **kwargs))
+        cls.log.debug('cls: {} n: {} b: {} A: {}'.format(cls, name, bases, attrs, **kwargs))
         cls.run_asserts(name, attrs)
         obj = super().__new__(cls, name, bases, attrs, **kwargs)
         cls.process_rpc(obj, bases, attrs)
@@ -70,6 +74,9 @@ class ServiceMeta(type):
 
 class Service(metaclass=ServiceMeta):
     service_name = None  # type: str
+
+    def __init__(self):
+        self.log = logging.getLogger(self.service_name)
 
     def on_start(self):
         pass

@@ -1,16 +1,18 @@
 import asyncio
 import os
-from unittest import TestCase
-
+import logging
 
 from basictracer import BasicTracer
 from basictracer.recorder import InMemoryRecorder
 
+# TODO separate
+from aiozk.test.aio_test import AIOTestCase
+
 from fan.context import TracedContext
-from fan.remote import RemoteEndpoint, ProxyEndpoint, Transport
 from fan.contrib.redis import RedisEndpoint, RedisTransport
 from fan.discovery import SimpleDictDiscovery, LocalDiscovery
 from fan.contrib.aio.discovery import AIOCompositeDiscovery
+from fan.contrib.aio.remote import AIOProxyEndpoint
 from fan.service import Service, endpoint
 
 
@@ -30,31 +32,32 @@ class DummyService(Service):
 
     @endpoint
     def ping(self, ctx):
-        print('Call ping endpoint {}'.format(ctx.span.context.trace_id))
+        self.log.debug('Call ping endpoint {}'.format(ctx.span.context.trace_id))
         return 'pong'
 
 
-class RedisCase(TestCase):
-    def setUp(self):
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
+class RedisCase(AIOTestCase):
+    log = logging.getLogger('RedisCase')
 
+    async def setUp(self):
         self.recorder = InMemoryRecorder()
         self.dict_discovery = DummyDiscovery({})
         self.discovery = AIOCompositeDiscovery(TestLocalDiscovery(), self.dict_discovery)
         self.discovery.tracer = BasicTracer(self.recorder)
         self.svc = DummyService()
-        self.svc.on_start()
+        await self.ensure_future(self.svc.on_start())
 
-    def test_remote_register(self):
-        ep = RedisEndpoint(self.discovery, self.svc, {})
-        ep.on_start()
+    async def test_remote_register(self):
+        params = {'transport': 'redis',
+                  'queue': 'test'}
+        ep = RedisEndpoint(self.discovery, self.svc, params)
+        await self.ensure_future(ep.on_start())
         self.discovery.register(ep)
 
         l = self.discovery.local
         r = self.discovery.remote
         assert l.cached_endpoints[('dummy',)] == ep
-        assert r.data['dummy'] == {}
+        assert r.data['dummy'] == params
 
     @property
     def ctx(self):
@@ -62,29 +65,24 @@ class RedisCase(TestCase):
         discovery.tracer = BasicTracer(self.recorder)
         return TracedContext(discovery)
 
-    async def _test_remote_call(self):
+    async def test_remote_call(self):
         params = {'host': os.environ.get('REDIS_HOST', 'redis'),
                   'port': 6379,
                   'queue': 'test_redis',
                   'transport': 'redis'}
         ep = RedisEndpoint(self.discovery, self.svc, params)
-        print('EP: {} {}'.format(ep.on_start(), ep))
+        self.log.debug('EP: {}'.format(ep))
         await ep.on_start()
         self.discovery.register(ep)
 
-        pep = ProxyEndpoint(self.discovery, 'dummy', params)
-        pep.on_start()
+        pep = AIOProxyEndpoint(self.discovery, 'dummy', params)
+        await pep.on_start()
 
         ctx = self.ctx
         res = await ctx.rpc.dummy.ping()
         ctx.span.finish()
         self.assertEqual(res, 'pong')
 
-    def test_remote_call(self):
-        self.loop.run_until_complete(self._test_remote_call())
         self.assertEquals(len(self.recorder.get_spans()), 2)
-        print('SPANS: {}'.format([(x.context.span_id, x.context.trace_id) for x in self.recorder.get_spans()]))
-
-    def tearDown(self):
-        self.loop.close()
-        asyncio.set_event_loop(None)
+        spans = [(x.context.span_id, x.context.trace_id) for x in self.recorder.get_spans()]
+        self.log.debug('SPANS: {}'.format(spans))

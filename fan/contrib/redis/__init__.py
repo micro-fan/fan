@@ -20,7 +20,7 @@ class RedisTransport(AIOQueueBasedTransport, AIOTransport):
 
     async def sub_prepare(self):
         self.sub = await self.new_connection()
-        print('Subscribe...')
+        self.log.debug('Subscribe...')
         if self.remote:
             route = self.params['queue']
         else:
@@ -40,7 +40,7 @@ class RedisTransport(AIOQueueBasedTransport, AIOTransport):
         await self.pub.close()
 
     async def on_start(self):
-        print('Start redis')
+        self.log.debug('Start redis')
         await super().on_start()
 
     async def rpc_inner_call(self, msg):
@@ -59,7 +59,7 @@ class RedisTransport(AIOQueueBasedTransport, AIOTransport):
                 parent_ctx = SpanContext(**ctx_headers)
                 method = msg['method']
                 ctx = Context(self.discovery, parent_ctx, method)
-                print('CTX: {}'.format(ctx.span.context.trace_id))
+                self.log.debug('CTX: {}'.format(ctx.span.context.trace_id))
                 args = msg.get('args', ())
                 kwargs = msg.get('kwargs', {})
                 if self.remote:
@@ -68,18 +68,17 @@ class RedisTransport(AIOQueueBasedTransport, AIOTransport):
                         resp = await hc
                     else:
                         resp = hc
-                    print('Send resp ==> : {}'.format(resp))
+                    self.log.debug('Send resp ==> : {}'.format(resp))
                     await self.pub.publish_json(msg['back_route'],
                                                 {'context_headers': msg['context_headers'],
                                                  'method': msg['method'],
                                                  'response': resp})
                 else:
-                    print('Put into responses {}'.format(self.responses))
+                    self.log.debug('Put into responses {}'.format(self.responses))
                     await self.responses.put(msg)
 
 
 class RedisEndpoint(RemoteEndpoint):
-    transportClass = RedisTransport
 
     async def on_start(self):
         await self.transport.on_start()

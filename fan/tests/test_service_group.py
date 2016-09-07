@@ -53,7 +53,7 @@ class DummyTransport(Transport):
             self.storage[params['id']] = self
 
     def rpc_call(self, method, ctx, *args, **kwargs):
-        print('Storage: {}'.format(self.storage))
+        self.log.debug('Storage: {}'.format(self.storage))
         remote_ep = self.storage[self.params['id']]
         return remote_ep.handle_call(method, ctx, *args, **kwargs)
 
@@ -125,7 +125,7 @@ class TestRemoteDiscovery(SimpleDictDiscovery):
             self.remote.link(self)
 
     def find_local_endpoint(self, service_name):
-        print('Remote Lookup: {} {}'.format(service_name, self.cached_endpoints))
+        self.log.debug('Remote Lookup: {} {}'.format(service_name, self.cached_endpoints))
         if service_name in self.cached_endpoints:
             return self.cached_endpoints[service_name]
         assert False, 'Cannot find: {} {}'.format(service_name, self.cached_endpoints)

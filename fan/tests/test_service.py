@@ -11,7 +11,7 @@ class DummyService(Service):
 
     @endpoint('echo')
     def method(self, context, message):
-        print('SELF: {} MSG: {}'.format(self, message))
+        self.log.debug('SELF: {} MSG: {}'.format(self, message))
         return message
 
 
