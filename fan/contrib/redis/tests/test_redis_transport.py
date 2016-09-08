@@ -48,7 +48,9 @@ class RedisCase(AIOTestCase):
         await self.ensure_future(self.svc.on_start())
 
     async def test_remote_register(self):
-        params = {'transport': 'redis',
+        params = {'host': os.environ.get('REDIS_HOST', 'redis'),
+                  'port': 6379,
+                  'transport': 'redis',
                   'queue': 'test'}
         ep = RedisEndpoint(self.discovery, self.svc, params)
         await self.ensure_future(ep.on_start())
