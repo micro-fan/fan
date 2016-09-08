@@ -69,7 +69,7 @@ class LocalEndpoint(Endpoint):
     """
     def __init__(self, service):
         super().__init__(service)
-        self.name = service.service_name.split('.')
+        self.name = service.name.split('.')
         self.log = logging.getLogger(self.__class__.__name__)
 
     def __getattr__(self, name):
@@ -94,7 +94,7 @@ class RemoteEndpoint(LocalEndpoint):
 
     @property
     def name(self):
-        return self.service.service_name
+        return self.service.name
 
     def on_start(self):
         self.transport.on_start()

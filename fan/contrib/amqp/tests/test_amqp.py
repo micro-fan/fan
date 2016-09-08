@@ -29,7 +29,7 @@ class TestLocalDiscovery(LocalDiscovery):
 
 
 class DummyService(Service):
-    service_name = 'dummy'
+    name = 'dummy'
 
     @endpoint
     def ping(self, ctx):

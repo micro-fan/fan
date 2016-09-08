@@ -16,7 +16,7 @@ def get_simple_discovery():
 
 
 class DummyTracer(Service):
-    service_name = 'dummy_tracer'
+    name = 'dummy_tracer'
 
     @endpoint('echo')
     def echo(self, ctx, word, count):
@@ -69,7 +69,7 @@ class DummyServiceGroup(TestServiceGroup):
 
 
 class ChainedEchoService(Service):
-    service_name = 'chained_echo'
+    name = 'chained_echo'
 
     @endpoint('echo')
     def echo(self, ctx, word):
@@ -83,7 +83,7 @@ class ChainedServiceGroup(TestServiceGroup):
 
 
 class EchoService(Service):
-    service_name = 'simple_echo'
+    name = 'simple_echo'
 
     @endpoint('echo')
     def echo(self, ctx, word):

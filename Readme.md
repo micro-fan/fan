@@ -140,7 +140,7 @@ class AppRoutes(kit.Routes):
 
 
 class LightSpeedSync(Service):
-    service_name = 'lightspeed'
+    name = 'lightspeed'
     depend = {
         'hard': ['integration_api'],  # we cannot work without this service
         'soft': ['lightspeed'],  # we notify lightspeed, but can work without it
@@ -172,7 +172,7 @@ class LightSpeedSync(Service):
         self.rpc.integration_api.barcode_sync_clear(barcodes)
 
 class BarcodeSyncClear(GenericAPIView, DRFService):
-    service_name = ['integrations_api', 'barcode_sync_clear']
+    name = ['integrations_api', 'barcode_sync_clear']
 
     @rpc() # can call just barcode_sync_clear()
     def patch(self, request, *args, **kwargs):
@@ -187,7 +187,7 @@ class PublicWineViewset(ModelViewSet, DRFService):
 
     TODO: url can store params for HTTP api_version, store_id, inventory_id
     '''
-    service_name = 'public_wines'
+    name = 'public_wines'
 
     @rpc('create')  # item parameters
     def create(self, request, *a, **k): pass

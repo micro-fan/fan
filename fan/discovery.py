@@ -44,7 +44,7 @@ class LocalDiscovery:
     def register(self, endpoint: Endpoint):
         if isinstance(endpoint, LocalEndpoint):
             service = endpoint.service
-            path = tuple(service.service_name.split('.'))
+            path = tuple(service.name.split('.'))
             self.cached_endpoints[path] = endpoint
         else:
             path = tuple(endpoint.name)
@@ -115,7 +115,7 @@ class SimpleDictDiscovery(RemoteDiscovery):
         self.data = conf
 
     def register(self, endpoint):
-        path, data = endpoint.service.service_name.split('.'), endpoint.remote_params
+        path, data = endpoint.service.name.split('.'), endpoint.remote_params
         path_set(self.data, path, data)
 
     def find_endpoint(self, path):

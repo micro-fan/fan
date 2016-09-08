@@ -44,7 +44,7 @@ class ServiceMeta(type):
     def run_asserts(name, attrs):
         if name == 'Service':
             return
-        assert attrs['service_name'], 'No service name for {} given'.format(name)
+        assert attrs['name'], 'No service name for {} given'.format(name)
 
     def process_rpc(svc, bases, attrs):
         if svc.__name__ == 'Service':
@@ -62,7 +62,7 @@ class ServiceMeta(type):
                 for k, v in base._rpc.items():
                     if k not in r:
                         r[k] = v
-        r['_meta'] = {'name': tuple(svc.service_name.split('.'))}
+        r['_meta'] = {'name': tuple(svc.name.split('.'))}
 
     def __new__(cls, name, bases, attrs, **kwargs):
         cls.log.debug('cls: {} n: {} b: {} A: {}'.format(cls, name, bases, attrs, **kwargs))
@@ -73,10 +73,11 @@ class ServiceMeta(type):
 
 
 class Service(metaclass=ServiceMeta):
-    service_name = None  # type: str
+    name = None  # type: str
+    version = None  # type: tuple
 
     def __init__(self):
-        self.log = logging.getLogger(self.service_name)
+        self.log = logging.getLogger(self.name)
 
     def on_start(self):
         pass

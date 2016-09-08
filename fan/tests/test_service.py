@@ -7,7 +7,7 @@ from fan.service import Service, endpoint
 
 
 class DummyService(Service):
-    service_name = 'dummy'
+    name = 'dummy'
 
     @endpoint('echo')
     def method(self, context, message):
@@ -16,7 +16,7 @@ class DummyService(Service):
 
 
 class D2Service(DummyService):
-    service_name = 'tree.dummy'
+    name = 'tree.dummy'
 
 
 class FanTest(TestCase):
