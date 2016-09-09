@@ -38,7 +38,7 @@ class ZKDiscovery(RemoteDiscovery):
         path = name.split('.')
         await self.recursive_create(path, endpoint.version, endpoint.config)
 
-    def find_endpoint(self, service_name):
+    def find_endpoint(self, service_name, version_filter):
         pass
 
     def watch(self, path, callback):

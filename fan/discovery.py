@@ -50,7 +50,7 @@ class LocalDiscovery:
             path = tuple(endpoint.name)
             self.cached_endpoints[path] = endpoint
 
-    def find_endpoint(self, service_name):
+    def find_endpoint(self, service_name, version_filter=None):
         if service_name in self.cached_endpoints:
             return self.cached_endpoints[service_name]
 
@@ -67,10 +67,10 @@ class RemoteDiscovery:
     def register(self, endpoint):
         raise NotImplementedError
 
-    def find_endpoint(self, service_name):
-        return self.find_remote_endpoint(service_name)
+    def find_endpoint(self, service_name, version_filter):
+        return self.find_remote_endpoint(service_name, version_filter)
 
-    def find_remote_endpoint(self, service_name):
+    def find_remote_endpoint(self, service_name, version_filter):
         raise NotImplementedError
 
     def watch(self, path, callback):
@@ -80,17 +80,25 @@ class RemoteDiscovery:
         raise NotImplementedError
 
 
+def version_filter(constraints):
+    def filter_versions(versions):
+        if len(versions):
+            # TODO: add actual filter
+            return versions[0]
+    return filter_versions
+
+
 class CompositeDiscovery:
     def __init__(self, local, remote):
         self.log = logging.getLogger(self.__class__.__name__)
         self.local = local
         self.remote = remote
 
-    def find_endpoint(self, name):
-        local = self.local.find_endpoint(name)
+    def find_endpoint(self, name, version_constraints=[]):
+        local = self.local.find_endpoint(name, version_filter)
         if local:
             return local
-        proxy_cfg = self.remote.find_endpoint(name)
+        proxy_cfg = self.remote.find_endpoint(name, version_filter)
         if proxy_cfg:
             ep = self.create_proxy(name, proxy_cfg)
             self.local.register(ep)
@@ -118,7 +126,7 @@ class SimpleDictDiscovery(RemoteDiscovery):
         path, data = endpoint.service.name.split('.'), endpoint.remote_params
         path_set(self.data, path, data)
 
-    def find_endpoint(self, path):
+    def find_endpoint(self, path, version_filter):
         return path_get(self.data, path)
 
     def watch(self, path, cb):

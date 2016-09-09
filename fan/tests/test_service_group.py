@@ -45,7 +45,7 @@ class TestServiceGroup(ServiceGroup):
 
 
 class DummyTransport(Transport):
-    storage = {}
+    storage = {}  # type: dict
 
     def __init__(self, discovery, endpoint, params):
         super().__init__(discovery, endpoint, params)
@@ -130,7 +130,7 @@ class TestRemoteDiscovery(SimpleDictDiscovery):
             return self.cached_endpoints[service_name]
         assert False, 'Cannot find: {} {}'.format(service_name, self.cached_endpoints)
 
-    def find_remote_endpoint(self, service_name):
+    def find_remote_endpoint(self, service_name, version_filter):
         pass
 
 
