@@ -15,6 +15,7 @@ from fan.contrib.amqp import AMQPEndpoint, AMQPTransport
 from fan.discovery import SimpleDictDiscovery, LocalDiscovery
 from fan.contrib.aio.discovery import AIOCompositeDiscovery
 from fan.service import Service, endpoint
+from fan.tests import TEST_TIMEOUT
 
 
 class DummyDiscovery(SimpleDictDiscovery):
@@ -56,7 +57,7 @@ class AMQPCase(AIOTestCase):
                   'routing_key': 'dummy',
                   'transport': 'amqp'}
         ep = AMQPEndpoint(self.discovery, self.svc, params)
-        await asyncio.wait_for(ep.on_start(), 1)
+        await asyncio.wait_for(ep.on_start(), TEST_TIMEOUT)
         self.discovery.register(ep)
 
         l = self.discovery.local
@@ -78,7 +79,7 @@ class AMQPCase(AIOTestCase):
                   'routing_key': 'dummy',
                   'transport': 'amqp'}
         ep = AMQPEndpoint(self.discovery, self.svc, params)
-        await asyncio.wait_for(ep.on_start(), 1)
+        await asyncio.wait_for(ep.on_start(), TEST_TIMEOUT)
         self.discovery.register(ep)
 
         pep = AIOProxyEndpoint(self.discovery, 'dummy', params)

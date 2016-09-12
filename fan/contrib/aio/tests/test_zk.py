@@ -5,6 +5,7 @@ import os
 from aiozk.test.aio_test import AIOTestCase
 
 from fan.contrib.aio.discovery import ZKDiscovery
+from fan.tests import TEST_TIMEOUT
 
 
 class StubEndpoint:
@@ -16,7 +17,7 @@ class StubEndpoint:
 class TestZK(AIOTestCase):
     async def setUp(self):
         self.remote = ZKDiscovery(os.environ.get('ZK_HOST', 'zk:2181'), chroot='/test_fan')
-        await asyncio.wait_for(self.remote.on_start(), 2)
+        await asyncio.wait_for(self.remote.on_start(), TEST_TIMEOUT)
 
     async def test_init(self):
         pass
