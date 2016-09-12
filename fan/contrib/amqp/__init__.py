@@ -71,13 +71,12 @@ class AMQPTransport(AIOQueueBasedTransport, AIOTransport):
         span_id = str(ctx['span_id'])
         amqp_msg = asynqp.Message(body,
                                   headers=ctx,
-                                  # expiration=str(time.time()+10),
                                   reply_to='amq.rabbitmq.reply-to',
                                   correlation_id=span_id)
         self.log.debug('Publish message: {} {}'.format(self.exchange, self.routing_key))
         self.exchange.publish(amqp_msg, self.routing_key)
         rep = await resp
-        return rep['response']
+        return rep
 
     def deliver(self, msg):
         self.log.debug('DELIVERED: {}'.format(msg))
@@ -100,17 +99,18 @@ class AMQPTransport(AIOQueueBasedTransport, AIOTransport):
                     resp = await hc
                 else:
                     resp = hc
-                    self.log.debug('Send resp ==> : {}'.format(resp))
-                    resp = asynqp.Message({'context_headers': msg['context_headers'],
-                                           'method': msg['method'],
-                                           'response': resp},
-                                          correlation_id=raw_msg.correlation_id)
-                    self.default_exchange.publish(resp, raw_msg.reply_to, mandatory=False)
-                    raw_msg.ack()
+                self.log.debug('Send resp ==> : {}'.format(resp))
+                resp = asynqp.Message({'context_headers': msg['context_headers'],
+                                       'method': msg['method'],
+                                       'response': resp},
+                                      correlation_id=raw_msg.correlation_id)
+                self.default_exchange.publish(resp, raw_msg.reply_to, mandatory=False)
+                raw_msg.ack()
             else:
-                self.send_response(msg)
+                self.proxy_send_response(msg)
         except Exception as e:
             self.terminate(e)
+
 
 class AMQPEndpoint(RemoteEndpoint):
     async def on_start(self):

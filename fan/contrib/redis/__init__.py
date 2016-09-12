@@ -1,11 +1,7 @@
 import asyncio
 import uuid
 import aioredis
-from types import CoroutineType
 
-from basictracer.context import SpanContext
-
-from fan.context import TracedContext as Context
 from fan.remote import RemoteEndpoint
 from fan.contrib.aio.remote import AIOTransport, AIOQueueBasedTransport
 
@@ -15,6 +11,11 @@ class RedisStop(Exception):
 
 
 class RedisTransport(AIOQueueBasedTransport, AIOTransport):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        import logging
+        self.log = logging.getLogger(str(self))
+
     def new_connection(self):
         params = self.params
         return aioredis.create_redis((params.get('host', 'localhost'),
@@ -30,17 +31,18 @@ class RedisTransport(AIOQueueBasedTransport, AIOTransport):
             route = self.back_route = str(uuid.uuid4())
 
         res = await self.sub.subscribe(route)
-        self.loop.create_task(self.read_loop(res[0]))
+        self._read = asyncio.ensure_future(self.read_loop(res[0]))
 
     async def pub_prepare(self):
         self.pub = await self.new_connection()
 
     async def sub_stop(self):
-        await self.sub.close()
+        self.sub.close()
 
     async def pub_stop(self):
+        self._read.cancel()
+        self.pub.close()
         self.terminate(RedisStop())
-        await self.pub.close()
 
     async def on_start(self):
         self.log.debug('Start redis')
@@ -54,34 +56,15 @@ class RedisTransport(AIOQueueBasedTransport, AIOTransport):
         rep = await resp
         return rep['response']
 
-    async def read_loop(self, chan):
-        try:
-            while not self.stopped:
-                while (await chan.wait_message()):
-                    msg = await chan.get_json()
-                    ctx_headers = msg['context_headers']
-                    if self.remote:
-                        parent_ctx = SpanContext(**ctx_headers)
-                        method = msg['method']
-                        ctx = Context(self.discovery, self.endpoint.service, parent_ctx, method)
-                        self.log.debug('CTX: {}'.format(ctx.span.context.trace_id))
-                        args = msg.get('args', ())
-                        kwargs = msg.get('kwargs', {})
-                        hc = self.handle_call(method, ctx, *args, **kwargs)
-                        if isinstance(hc, CoroutineType):
-                            resp = await hc
-                        else:
-                            resp = hc
-                            self.log.debug('Send resp ==> : {}'.format(resp))
-                            await self.pub.publish_json(msg['back_route'],
-                                                            {'context_headers': msg['context_headers'],
-                                                                 'method': msg['method'],
-                                                            'response': resp})
-                    else:
-                        self.send_response(msg)
-        except Exception as e:
-            self.log.exception('In read loop')
-            self.terminate(e)
+    async def inner_read_message(self, chan):
+        await chan.wait_message()
+        return await chan.get_json()
+
+    async def remote_send_response(self, msg, response):
+        await self.pub.publish_json(msg['back_route'],
+                                    {'context_headers': msg['context_headers'],
+                                     'method': msg['method'],
+                                     'response': response})
 
 
 class RedisEndpoint(RemoteEndpoint):

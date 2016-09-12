@@ -15,7 +15,7 @@ class Caller:
     def __call__(self, *args, **kwargs):
         self.log.debug('Generate call: {} {} {}'.format(self.call_path, args, kwargs))
         endpoint = self.context.discovery.find_endpoint(tuple(self.call_path[:-1]))
-        self.log.debug('Endpoint: {}'.format(endpoint))
+        self.log.debug('RPCEndpoint: {}'.format(endpoint))
         if endpoint:
             handler = self.find_handler(endpoint)
             try:
