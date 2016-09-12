@@ -3,20 +3,7 @@ from unittest import TestCase
 from fan.context import Context
 from fan.discovery import LocalDiscovery
 from fan.remote import LocalEndpoint
-from fan.service import Service, endpoint
-
-
-class DummyService(Service):
-    name = 'dummy'
-
-    @endpoint('echo')
-    def method(self, context, message):
-        self.log.debug('SELF: {} MSG: {}'.format(self, message))
-        return message
-
-
-class D2Service(DummyService):
-    name = 'tree.dummy'
+from fan.tests import DummyService, NestedService
 
 
 class FanTest(TestCase):
@@ -24,7 +11,7 @@ class FanTest(TestCase):
         super(FanTest, self).__init__(*args, **kwargs)
         discovery = LocalDiscovery()
 
-        for service in [DummyService, D2Service]:
+        for service in [DummyService, NestedService]:
             s = service()
             discovery.register(LocalEndpoint(s))
 
@@ -38,4 +25,4 @@ class ServiceTest(FanTest):
 
     def test_02_tree(self):
         msg = 'test_message'
-        self.assertEqual(self.context.rpc.tree.dummy.echo(msg), msg)
+        self.assertEqual(self.context.rpc.nested.tree.dummy.echo(msg), msg)
