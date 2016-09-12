@@ -56,7 +56,7 @@ class AMQPCase(AIOTestCase):
                   'routing_key': 'dummy',
                   'transport': 'amqp'}
         ep = AMQPEndpoint(self.discovery, self.svc, params)
-        await ep.on_start()
+        await asyncio.wait_for(ep.on_start(), 1)
         self.discovery.register(ep)
 
         l = self.discovery.local
@@ -78,7 +78,7 @@ class AMQPCase(AIOTestCase):
                   'routing_key': 'dummy',
                   'transport': 'amqp'}
         ep = AMQPEndpoint(self.discovery, self.svc, params)
-        await ep.on_start()
+        await asyncio.wait_for(ep.on_start(), 1)
         self.discovery.register(ep)
 
         pep = AIOProxyEndpoint(self.discovery, 'dummy', params)

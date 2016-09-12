@@ -16,7 +16,7 @@ class StubEndpoint:
 class TestZK(AIOTestCase):
     async def setUp(self):
         self.remote = ZKDiscovery(os.environ.get('ZK_HOST', 'zk:2181'), chroot='/test_fan')
-        await self.remote.on_start()
+        await asyncio.wait_for(self.remote.on_start(), 2)
 
     async def test_init(self):
         pass
