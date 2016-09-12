@@ -7,23 +7,8 @@ from fan.discovery import (SimpleDictDiscovery,
                            LocalDiscovery, CompositeDiscovery)
 from fan.service import ServiceGroup, Service, endpoint
 from fan.process import Process
-from fan.remote import LocalEndpoint, RemoteEndpoint, Transport
-
-
-def get_simple_discovery():
-    conf = {}
-    return CompositeDiscovery(LocalDiscovery(), SimpleDictDiscovery(conf))
-
-
-class DummyTracer(Service):
-    name = 'dummy_tracer'
-
-    @endpoint('echo')
-    def echo(self, ctx, word, count):
-        if count > 0:
-            return ctx.rpc.dummy_tracer.echo(word, count-1)
-        else:
-            return word, 0
+from fan.remote import LocalEndpoint, RemoteEndpoint
+from fan.tests import DummyTracer, DummyTransport
 
 
 class TestServiceGroup(ServiceGroup):
@@ -44,27 +29,9 @@ class TestServiceGroup(ServiceGroup):
                 self.discovery.register(ep)
 
 
-class DummyTransport(Transport):
-    storage = {}  # type: dict
-
-    def __init__(self, discovery, endpoint, params):
-        super().__init__(discovery, endpoint, params)
-        if isinstance(endpoint, RemoteEndpoint):
-            self.storage[params['id']] = self
-
-    def rpc_call(self, method, ctx, *args, **kwargs):
-        self.log.debug('Storage: {}'.format(self.storage))
-        remote_ep = self.storage[self.params['id']]
-        return remote_ep.handle_call(method, ctx, *args, **kwargs)
-
-
-class DummyRemoteEndpoint(RemoteEndpoint):
-    transportClass = DummyTransport
-
-
 class DummyServiceGroup(TestServiceGroup):
     services = [{'service': DummyTracer,
-                 'endpoints': [{'endpoint': DummyRemoteEndpoint,
+                 'endpoints': [{'endpoint': RemoteEndpoint,
                                 'params': {'id': 1, 'transport': 'dummy'}}]}]
 
 
@@ -78,39 +45,13 @@ class ChainedEchoService(Service):
 
 class ChainedServiceGroup(TestServiceGroup):
     services = [{'service': ChainedEchoService,
-                 'endpoints': [{'endpoint': DummyRemoteEndpoint,
+                 'endpoints': [{'endpoint': RemoteEndpoint,
                                 'params': {'id': 2, 'transport': 'dummy'}}]}]
-
-
-class EchoService(Service):
-    name = 'simple_echo'
-
-    @endpoint('echo')
-    def echo(self, ctx, word):
-        return word
 
 
 class TestProcess(Process):
     def create_context(self):
         return TracedContext(self.discovery)
-
-
-class ProcessTestCase(TestCase):
-    def setUp(self):
-        self.recorder = InMemoryRecorder()
-        d = get_simple_discovery()
-        d.tracer = BasicTracer(self.recorder)
-
-        self.process = TestProcess(d)
-
-    def test_call(self):
-        context = self.process.create_context()
-
-        context.discovery.register(LocalEndpoint(DummyTracer()))
-        response = context.rpc.dummy_tracer.echo('hello', 7)
-
-        self.assertEquals(len(self.recorder.get_spans()), 8)
-        assert response == ('hello', 0), response
 
 
 class TestRemoteDiscovery(SimpleDictDiscovery):
@@ -139,6 +80,24 @@ class TestLocalDiscovery(LocalDiscovery):
 
     def get_transport_class(self, name):
         return self.transports[name]
+
+
+class ProcessTestCase(TestCase):
+    def setUp(self):
+        self.recorder = InMemoryRecorder()
+        d = CompositeDiscovery(LocalDiscovery(), SimpleDictDiscovery({}))
+        d.tracer = BasicTracer(self.recorder)
+
+        self.process = TestProcess(d)
+
+    def test_call(self):
+        context = self.process.create_context()
+
+        context.discovery.register(LocalEndpoint(DummyTracer()))
+        response = context.rpc.dummy_tracer.echo('hello', 7)
+
+        self.assertEquals(len(self.recorder.get_spans()), 8)
+        assert response == ('hello', 0), response
 
 
 class MultiProcessTestCase(TestCase):
