@@ -14,8 +14,8 @@ class Process:
         self.discovery = discovery
         self.instances = []
 
-    def create_context(self):
-        return Context(self.discovery)
+    def create_context(self, service=None):
+        return Context(self.discovery, service)
 
     def start(self):
         for SG in self.service_groups:

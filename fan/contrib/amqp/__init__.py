@@ -43,7 +43,6 @@ class AMQPTransport(AIOQueueBasedTransport, AIOTransport):
             queue = await self.sub.declare_queue(queue_name)
             await queue.bind(self.exchange, self.routing_key)
         else:
-            self.responses = asyncio.Queue()
             queue_name = 'amq.rabbitmq.reply-to'
             queue = await self.sub.declare_queue(queue_name, nowait=True)
         # self.loop.create_task(self.read_loop(queue))
@@ -64,19 +63,20 @@ class AMQPTransport(AIOQueueBasedTransport, AIOTransport):
         self.log.info('Start amqp')
         await super().on_start()
 
-    async def rpc_inner_call(self, msg):
+    async def rpc_inner_call(self, msg, resp):
         ctx = msg['context_headers']
         for k, v in ctx.items():
             ctx[k] = str(v)
         body = msg
+        span_id = str(ctx['span_id'])
         amqp_msg = asynqp.Message(body,
                                   headers=ctx,
                                   # expiration=str(time.time()+10),
                                   reply_to='amq.rabbitmq.reply-to',
-                                  correlation_id=str(ctx['span_id']))
+                                  correlation_id=span_id)
         self.log.debug('Publish message: {} {}'.format(self.exchange, self.routing_key))
         self.exchange.publish(amqp_msg, self.routing_key)
-        rep = await self.responses.get()
+        rep = await resp
         return rep['response']
 
     def deliver(self, msg):
@@ -84,33 +84,33 @@ class AMQPTransport(AIOQueueBasedTransport, AIOTransport):
         self.loop.create_task(self.read_loop(msg))
 
     async def read_loop(self, raw_msg):
-        self.log.debug('Got message: {} Q[{}]'.format(raw_msg, self.queue.name))
-
-        msg = raw_msg.json()
-        ctx_headers = msg['context_headers']
-        parent_ctx = SpanContext(**ctx_headers)
-        method = msg['method']
-        ctx = Context(self.discovery, parent_ctx, method)
-        self.log.debug('CTX: {} {}'.format(ctx.span.context.trace_id, raw_msg.correlation_id))
-        args = msg.get('args', ())
-        kwargs = msg.get('kwargs', {})
-        if self.remote:
-            hc = self.handle_call(method, ctx, *args, **kwargs)
-            if isinstance(hc, CoroutineType):
-                resp = await hc
+        try:
+            self.log.debug('Got message: {} Q[{}]'.format(raw_msg, self.queue.name))
+            msg = raw_msg.json()
+            ctx_headers = msg['context_headers']
+            if self.remote:
+                parent_ctx = SpanContext(**ctx_headers)
+                method = msg['method']
+                ctx = Context(self.discovery, self.endpoint.service, parent_ctx, method)
+                self.log.debug('CTX: {} {}'.format(ctx.span.context.trace_id, raw_msg.correlation_id))
+                args = msg.get('args', ())
+                kwargs = msg.get('kwargs', {})
+                hc = self.handle_call(method, ctx, *args, **kwargs)
+                if isinstance(hc, CoroutineType):
+                    resp = await hc
+                else:
+                    resp = hc
+                    self.log.debug('Send resp ==> : {}'.format(resp))
+                    resp = asynqp.Message({'context_headers': msg['context_headers'],
+                                           'method': msg['method'],
+                                           'response': resp},
+                                          correlation_id=raw_msg.correlation_id)
+                    self.default_exchange.publish(resp, raw_msg.reply_to, mandatory=False)
+                    raw_msg.ack()
             else:
-                resp = hc
-            self.log.debug('Send resp ==> : {}'.format(resp))
-            resp = asynqp.Message({'context_headers': msg['context_headers'],
-                                   'method': msg['method'],
-                                   'response': resp},
-                                  correlation_id=raw_msg.correlation_id)
-            self.default_exchange.publish(resp, raw_msg.reply_to, mandatory=False)
-            raw_msg.ack()
-        else:
-            self.log.debug('Put into responses {}'.format(self.responses))
-            await self.responses.put(msg)
-
+                self.send_response(msg)
+        except Exception as e:
+            self.terminate(e)
 
 class AMQPEndpoint(RemoteEndpoint):
     async def on_start(self):

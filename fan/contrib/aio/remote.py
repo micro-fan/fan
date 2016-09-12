@@ -8,6 +8,19 @@ class AIOTransport(Transport):
         super().__init__(*args, **kwargs)
         self.loop = asyncio.get_event_loop()
         self.remote = isinstance(self.endpoint, RemoteEndpoint)
+        self.terminate_future = asyncio.Future()
+        self.responses = {}
+
+    def terminate(self, reason):
+        for v in self.responses.values():
+            v.set_exception(reason)
+        if not self.terminate_future.done():
+            self.terminate_future.set_exception(reason)
+
+    async def wait_or_terminate(self, coro):
+        f = asyncio.ensure_future(coro)
+        ret = await asyncio.wait([f, self.terminate_future], return_when=asyncio.FIRST_COMPLETED)
+        return await ret[0].pop()
 
     async def rpc_call(self, name, ctx, *args, **kwargs):
         # span_id, trace_id, sampled, baggage, with_baggage_item
@@ -21,7 +34,12 @@ class AIOTransport(Transport):
                'method': name,
                'args': args,
                'kwargs': kwargs}
-        return await self.rpc_inner_call(msg)
+        f = self.responses[str(c.span_id)] = asyncio.Future()
+        return await self.rpc_inner_call(msg, f)
+
+    def send_response(self, msg):
+        span_id = str(msg['context_headers']['span_id'])
+        self.responses[span_id].set_result(msg)
 
     async def _inner_call(self, msg):
         """
