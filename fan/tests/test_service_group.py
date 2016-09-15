@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from basictracer import BasicTracer
 from basictracer.recorder import InMemoryRecorder
-from fan.context import TracedContext
+from fan.context import Context
 from fan.discovery import (SimpleDictDiscovery,
                            LocalDiscovery, CompositeDiscovery)
 from fan.service import ServiceGroup, Service, endpoint
@@ -51,7 +51,7 @@ class ChainedServiceGroup(TestServiceGroup):
 
 class TestProcess(Process):
     def create_context(self):
-        return TracedContext(self.discovery)
+        return Context(self.discovery)
 
 
 class TestRemoteDiscovery(SimpleDictDiscovery):

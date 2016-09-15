@@ -7,7 +7,7 @@ from basictracer.recorder import InMemoryRecorder
 # TODO separate
 from aiozk.test.aio_test import AIOTestCase
 
-from fan.context import TracedContext
+from fan.context import Context
 from fan.contrib.aio.remote import AIOProxyEndpoint, AIOTransport
 from fan.remote import RemoteEndpoint
 
@@ -104,7 +104,7 @@ class AIOEndpointCase(AIOTestCase):
         discovery = AIOCompositeDiscovery(self.get_local_discovery(),
                                           self.dict_discovery)
         discovery.tracer = BasicTracer(self.recorder)
-        return TracedContext(discovery, self.svc)
+        return Context(discovery, self.svc)
 
     async def _test_remote_call(self):
         params = self.endpoint_params

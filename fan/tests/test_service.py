@@ -1,5 +1,8 @@
 from unittest import TestCase
 
+from basictracer import BasicTracer
+from basictracer.recorder import InMemoryRecorder
+
 from fan.context import Context
 from fan.discovery import LocalDiscovery
 from fan.remote import LocalEndpoint
@@ -9,7 +12,10 @@ from fan.tests import DummyService, NestedService
 class FanTest(TestCase):
     def __init__(self, *args, **kwargs):
         super(FanTest, self).__init__(*args, **kwargs)
+
+        self.recorder = InMemoryRecorder()
         discovery = LocalDiscovery()
+        discovery.tracer = BasicTracer(self.recorder)
 
         for service in [DummyService, NestedService]:
             s = service()

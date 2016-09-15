@@ -6,7 +6,7 @@ from types import CoroutineType
 
 from basictracer.context import SpanContext
 
-from fan.context import TracedContext as Context
+from fan.context import Context
 from fan.remote import RemoteEndpoint
 from fan.contrib.aio.remote import AIOTransport, AIOQueueBasedTransport
 

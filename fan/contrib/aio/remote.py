@@ -3,7 +3,7 @@ from types import CoroutineType
 
 from basictracer.context import SpanContext
 
-from fan.context import TracedContext as Context
+from fan.context import Context
 from fan.remote import ProxyEndpoint, Transport, RemoteEndpoint
 
 
