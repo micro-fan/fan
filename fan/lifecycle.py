@@ -87,8 +87,6 @@ class Spec:
         return obj
 
 
-
-
 class Lifecycle:
     '''
     We assume that you will set self.lifecycle = Lifecycle()
@@ -116,7 +114,7 @@ class Lifecycle:
         try:
             return fun(*args, **kwargs)
         except Exception as e:
-            self.log.exception('during call {} [{} {}]'.format(fun, args, kwargs))
+            self.log.info('during call {} [{} {}]'.format(fun, args, kwargs))
 
     def terminate(self, reason=Terminated):
         if self.state >= State.STOPPING:
@@ -154,6 +152,7 @@ class Supervisor:
     log = logging.getLogger('Supervisor')
 
     def __init__(self, specs=[]):
+        assert isinstance(specs, list), 'incompatible specs: {!r}'.format(specs)
         self.specs = specs
         self.instances = OrderedDict()
         self.lifecycle = Lifecycle(self, 'on_start', 'terminate', 'notify')

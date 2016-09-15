@@ -90,14 +90,30 @@ class LifecycleTest(TestCase):
         self.assertEqual(workers[1].lifecycle.state, State.TERMINATED)
 
     def test_05_add_broken_worker(self):
-        s = TestSupervisor()
-        s.lifecycle.on_start()
-
-        self.assertRaises(MaxRestarts, s.add_child, Spec(BrokenWorker))
-        self.assertEqual(s.lifecycle.state, State.TERMINATED)
+        self.assertRaises(MaxRestarts, self.s.add_child, Spec(BrokenWorker))
+        self.assertEqual(self.s.lifecycle.state, State.TERMINATED)
 
     def test_06_broken_supervisor(self):
         s = Supervisor([Spec(BrokenWorker)])
         self.assertRaises(MaxRestarts, s.lifecycle.on_start)
         self.assertEqual(list(s.instances), [])
+        self.assertEqual(s.lifecycle.state, State.TERMINATED)
+
+    def test_07_supervisor_of_supervisor(self):
+        sup_spec = Spec(Supervisor, [Spec(BrokenWorker)])
+        s = Supervisor([sup_spec])
+        self.assertRaises(MaxRestarts, s.lifecycle.on_start)
+        self.assertEqual(s.lifecycle.state, State.TERMINATED)
+
+    def test_08_nested_add(self):
+        sup_spec = Spec(Supervisor, [Spec(DamagedWorker)])
+        s = Supervisor([sup_spec])
+        s.lifecycle.on_start()
+        self.assertEqual(s.lifecycle.state, State.RUNNING)
+
+        s2 = list(s.instances)[0]
+        self.assertEqual(s2.lifecycle.state, State.RUNNING)
+
+        self.assertRaises(MaxRestarts, s2.add_child, Spec(BrokenWorker))
+        self.assertEqual(s2.lifecycle.state, State.TERMINATED)
         self.assertEqual(s.lifecycle.state, State.TERMINATED)
