@@ -159,7 +159,7 @@ class AIOOnlyTest(AIOTestCase):
         s = AIOSupervisor([AIOSpec(LaggyWorker)])
         await s.lifecycle.on_start()
         self.assertEqual(s.lifecycle.state, State.RUNNING)
-        await asyncio.sleep(0.001)
+        await asyncio.sleep(0.01)
         self.assertEqual(s.lifecycle.state, State.TERMINATED)
 
     async def test_02_restart(self):
