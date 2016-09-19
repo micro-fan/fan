@@ -24,7 +24,7 @@ class TestZK(AIOTestCase):
 
     async def test_register_function(self):
         data = b'{"test": "data"}'
-        await self.remote.recursive_create('/test/sub1/sub2', '1.0.0', data)
+        await self.remote.recursive_create('/endpoints/test/sub1/sub2', '1.0.0', data)
         base_path = '/endpoints/test/sub1/sub2/1.0.0'
         names = await self.remote.zk.get_children(base_path)
         out = await self.remote.zk.get_data('{}/{}'.format(base_path, names[0]))
@@ -33,4 +33,18 @@ class TestZK(AIOTestCase):
 
     async def test_register_endpoint(self):
         ep = StubEndpoint()
+        await self.remote.register(ep)
+
+    async def test_register_barrier(self):
+        ep = StubEndpoint()
+        zk = self.remote.zk
+        barrier_name = '{}/{}/barrier'.format(ep.name, ep.version)
+        barrier = zk.recipes.Barrier(barrier_name)
+        await barrier.create()
+        fut = asyncio.ensure_future(self.remote.register(ep))
+        try:
+            await asyncio.wait_for(fut, 0.12)
+        except asyncio.TimeoutError:
+            pass
+        await barrier.lift()
         await self.remote.register(ep)

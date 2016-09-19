@@ -18,13 +18,14 @@ class ZKDiscovery(RemoteDiscovery):
     async def recursive_create(self, path, version, data):
         if not isinstance(path, list):
             path = path.split('/')
-        curr = '/endpoints'
+        curr = '/'
         await self.create(curr)
         for sub in path:
             curr += '/{}'.format(sub)
             await self.create(curr, container=True)
         curr += '/{}'.format(version)
         await self.create(curr, container=True)
+
         curr += '/config_'
         await self.create(curr, data=data, ephemeral=True, sequential=True)
 
@@ -36,6 +37,8 @@ class ZKDiscovery(RemoteDiscovery):
     async def register(self, endpoint):
         name = endpoint.name
         path = name.split('.')
+        barrier = self.zk.recipes.Barrier('{}/{}/barrier'.format(name, endpoint.version))
+        await barrier.wait()
         await self.recursive_create(path, endpoint.version, endpoint.config)
 
     def find_endpoint(self, service_name, version_filter):
