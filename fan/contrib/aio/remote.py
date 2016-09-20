@@ -122,14 +122,10 @@ class AIOQueueBasedTransport:
 
 class AIOProxyEndpoint(ProxyEndpoint):
 
-    def __getattr__(self, name):
-        async def callable(ctx, *args, **kwargs):
-            if not self.transport.started:
-                await self.transport.on_start()
-            ret = await self.transport.rpc_call(name, ctx, *args, **kwargs)
-            self.log.debug('RPC resp: {}'.format(ret))
-            return ret
-        return callable
+    async def perform_call(self, ctx, method_name, *args, **kwargs):
+        if not self.transport.started:
+            await self.transport.on_start()
+        return await self.transport.rpc_call(method_name, ctx, *args, **kwargs)
 
     async def on_start(self):
         await self.transport.on_start()

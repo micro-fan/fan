@@ -48,13 +48,10 @@ class ProxyEndpoint(Endpoint):
         transportClass = discovery.get_transport_class(params['transport'])
         self.transport = transportClass(discovery, self, params)
 
-    def __getattr__(self, name):
-        def callable(ctx, *args, **kwargs):
-            if not self.transport.started:
-                self.transport.on_start()
-            ret = self.transport.rpc_call(name, ctx, *args, **kwargs)
-            return ret
-        return callable
+    def perform_call(self, ctx, method_name, *args, **kwargs):
+        if not self.transport.started:
+            self.transport.on_start()
+        return self.transport.rpc_call(method_name, ctx, *args, **kwargs)
 
     def on_start(self):
         self.transport.on_start()
@@ -72,9 +69,8 @@ class LocalEndpoint(Endpoint):
         self.name = service.name.split('.')
         self.log = logging.getLogger(self.__class__.__name__)
 
-    def __getattr__(self, name):
-        # self.log.debug('Obj: {} {}'.format(self.service, name))
-        return getattr(self.service, self.service._rpc[name])
+    def perform_call(self, ctx, method_name, *args, **kwargs):
+        return getattr(self.service, self.service._rpc[method_name])(ctx, *args, **kwargs)
 
 
 class RemoteEndpoint(LocalEndpoint):
@@ -101,3 +97,6 @@ class RemoteEndpoint(LocalEndpoint):
 
     def on_stop(self):
         return self.transport.on_stop()
+
+    def __getattr__(self, name):
+        return getattr(self.service, self.service._rpc[name])

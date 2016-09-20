@@ -17,16 +17,12 @@ class Caller:
         endpoint = self.context.discovery.find_endpoint(tuple(self.call_path[:-1]))
         self.log.debug('RPCEndpoint: {}'.format(endpoint))
         if endpoint:
-            handler = self.find_handler(endpoint)
             try:
                 self.context.pre_call()
-                return handler(self.context, *args, **kwargs)
+                method_name = self.call_path[-1]
+                return endpoint.perform_call(self.context, method_name, *args, **kwargs)
             finally:
                 self.context.post_call()
-
-    def find_handler(self, ep):
-        self.log.debug('EP: {}'.format(ep))
-        return getattr(ep, self.call_path[-1])
 
 
 class RPC:
