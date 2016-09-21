@@ -1,8 +1,7 @@
 import asyncio
 import os
 
-# TODO separate
-from aiozk.test.aio_test import AIOTestCase
+from tipsi_tools.testing.aio import AIOTestCase
 
 from fan.contrib.aio.discovery import ZKDiscovery
 from fan.tests import TEST_TIMEOUT
@@ -24,7 +23,7 @@ class TestZK(AIOTestCase):
 
     async def test_register_function(self):
         data = b'{"test": "data"}'
-        await self.remote.recursive_create('/endpoints/test/sub1/sub2', '1.0.0', data)
+        await self.remote.recursive_create('/endpoints/test/sub1/sub2/1.0.0', data)
         base_path = '/endpoints/test/sub1/sub2/1.0.0'
         names = await self.remote.zk.get_children(base_path)
         out = await self.remote.zk.get_data('{}/{}'.format(base_path, names[0]))

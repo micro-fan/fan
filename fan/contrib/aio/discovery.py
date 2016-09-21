@@ -1,3 +1,5 @@
+import json
+
 from aiozk import ZKClient, exc
 
 from fan.discovery import CompositeDiscovery, RemoteDiscovery
@@ -15,7 +17,7 @@ class ZKDiscovery(RemoteDiscovery):
         except exc.NodeExists:
             pass
 
-    async def recursive_create(self, path, version, data):
+    async def recursive_create(self, path, data) -> str:
         if not isinstance(path, list):
             path = path.split('/')
         curr = '/'
@@ -23,23 +25,29 @@ class ZKDiscovery(RemoteDiscovery):
         for sub in path:
             curr += '/{}'.format(sub)
             await self.create(curr, container=True)
-        curr += '/{}'.format(version)
-        await self.create(curr, container=True)
-
         curr += '/config_'
-        await self.create(curr, data=data, ephemeral=True, sequential=True)
+        if not (isinstance(data, str) or isinstance(data, bytes)):
+            data = json.dumps(data)
+        out = await self.create(curr, data=data, ephemeral=True, sequential=True)
+        return out
 
     async def on_start(self):
         await self.zk.start()
         if not await self.zk.exists('/endpoints'):
             await self.zk.create('/endpoints')
 
-    async def register(self, endpoint):
+    async def register(self, endpoint) -> str:
         name = endpoint.name
         path = name.split('.')
-        barrier = self.zk.recipes.Barrier('{}/{}/barrier'.format(name, endpoint.version))
-        await barrier.wait()
-        await self.recursive_create(path, endpoint.version, endpoint.config)
+        path.append(endpoint.version)
+        barrier_path = '/'.join(path + ['barrier'])
+        return await self.register_raw(path, endpoint.config, barrier_path)
+
+    async def register_raw(self, path, data, barrier_path=None) -> str:
+        if barrier_path:
+            barrier = self.zk.recipes.Barrier(barrier_path)
+            await barrier.wait()
+        return await self.recursive_create(path, data)
 
     def find_endpoint(self, service_name, version_filter):
         pass

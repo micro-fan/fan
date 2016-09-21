@@ -3,9 +3,7 @@ import logging
 
 from basictracer import BasicTracer
 from basictracer.recorder import InMemoryRecorder
-
-# TODO separate
-from aiozk.test.aio_test import AIOTestCase
+from tipsi_tools.testing.aio import AIOTestCase
 
 from fan.context import Context
 from fan.contrib.aio.remote import AIOProxyEndpoint, AIOTransport

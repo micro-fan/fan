@@ -1,6 +1,6 @@
 import asyncio
 
-from aiozk.test.aio_test import AIOTestCase
+from tipsi_tools.testing.aio import AIOTestCase
 from fan.contrib.aio.lifecycle import (AIOSupervisor, AIOLifecycle, AIOSpec, MaxRestarts,
                                        State)
 

@@ -7,4 +7,7 @@ opentracing
 basictracer==2.1.0
 aioredis==0.2.8
 asynqp==0.5.1
-aiozk>=0.1.4
+requests==2.11.1
+pyyaml==3.12
+aiozk>=0.1.7
+tipsi_tools>=0.9.0
