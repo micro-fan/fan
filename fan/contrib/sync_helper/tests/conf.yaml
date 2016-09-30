@@ -4,6 +4,7 @@ base: &base
 
 services:
   - name: simple
+    transport: http
     version: '1.0.0'
     <<: *base
     methods:

@@ -20,7 +20,7 @@ class TestSyncHelper(AIOTestCase):
 
     @property
     def zk_path(self):
-        return os.environ.get('ZK_PATH', 'zk')
+        return os.environ.get('ZK_HOST', 'zk')
 
     async def setUp(self):
         self.zk = ZKClient(self.zk_path)

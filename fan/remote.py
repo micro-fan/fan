@@ -16,7 +16,7 @@ class Transport:
     def on_stop(self):
         self.stopped = True
 
-    def rpc_call(self, ctx, *args, **kwargs):
+    def rpc_call(self, method, ctx, *args, **kwargs):
         raise NotImplementedError
 
     def handle_call(self, method, ctx, *args, **kwargs):
