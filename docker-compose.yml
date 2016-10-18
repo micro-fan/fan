@@ -15,7 +15,7 @@ services:
   zk:
     image: jplock/zookeeper:3.5.2-alpha
     ports:
-      - 2181:2181
+      - 2182:2181
 
   fan:
     build: .

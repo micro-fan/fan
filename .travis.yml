@@ -2,6 +2,9 @@ sudo: required
 
 language: python
 
+cache:
+  pip: true
+
 services:
   - docker
 
