@@ -22,7 +22,6 @@ class ServiceGroup:
         for service_class in self.services:
             service = service_class()
             service.on_start()
-
             self.instances.append(service)
 
     def stop(self):

@@ -61,19 +61,19 @@ class ZKDiscovery(RemoteDiscovery):
 
         version = sorted(childs)[-1]
         vpath = '{}/{}'.format(path, version)
-        configs = self.zk.get_children(vpath)
+        configs = await self.zk.get_children(vpath)
         # keep only config_ paths
-        configs = configs.filter(lambda x: x.startswith('config_'))
+        configs = filter(lambda x: x.startswith('config_'), configs)
         return await self.create_endpoint(service_name, vpath, configs)
 
     async def create_endpoint(self, name, path, configs):
+        # TODO: pass all configs
         config = sorted(configs)[-1]
         dpath = '{}/{}'.format(path, config)
         data = await self.zk.get_data(dpath)
         print('GET DATA: {!r}'.format(data))
         params = json.loads(data)
         return AIOProxyEndpoint(self, name, params)
-
 
     def watch(self, path, callback):
         pass
