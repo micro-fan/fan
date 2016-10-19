@@ -94,7 +94,7 @@ class CompositeDiscovery:
         self.local = local
         self.remote = remote
 
-    def find_endpoint(self, name, version_constraints=[]):
+    def find_endpoint(self, name, version_filter=[]):
         local = self.local.find_endpoint(name, version_filter)
         if local:
             return local
