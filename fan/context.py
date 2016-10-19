@@ -22,10 +22,17 @@ class Context:
 
     @property
     def rpc(self):
-        return RPC(self.create_child_context())
+        return RPC(self)
 
     def pre_call(self):
         pass
 
     def post_call(self):
         self.span.finish()
+
+    def __enter__(self, *args):
+        self.pre_call()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.post_call()
