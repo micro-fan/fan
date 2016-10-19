@@ -1,9 +1,11 @@
+import logging
 import requests
 
 from fan.remote import Transport
 
 
 class HTTPTransport(Transport):
+    log = logging.getLogger('HTTPTransport')
 
     def __init__(self, discovery, endpoint, params):
         super().__init__(discovery, endpoint, params)
@@ -28,4 +30,6 @@ class HTTPTransport(Transport):
             ret = resp.json()
         elif resp.status_code in (204,):
             ret = True
+        else:
+            self.log.error('Resp: {} : {}'.format(resp.status_code, resp))
         return ret
