@@ -38,7 +38,6 @@ class KazooDiscovery(RemoteDiscovery):
         return self.create_endpoint(service_tuple, vpath, configs)
 
     def get_transport_class(self, name):
-        print('GET TRANSPORT: {}'.format(name))
         return self.transport_classes[name]
 
     def create_endpoint(self, name, path, configs):
