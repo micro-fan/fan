@@ -8,7 +8,7 @@ from basictracer.recorder import InMemoryRecorder
 
 from fan.context import Context
 from fan.contrib.kazoo.discovery import KazooDiscovery
-from fan.transport import HTTPTransport
+from fan.transport import HTTPTransport, HTTPPropagator
 
 
 discovery = None
@@ -36,6 +36,7 @@ def get_discovery():
         'http': HTTPTransport,
     }
     discovery.tracer = get_tracer()
+    discovery.tracer.register_propagator('http', HTTPPropagator())
     return discovery
 
 
