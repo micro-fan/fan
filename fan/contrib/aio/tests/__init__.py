@@ -110,9 +110,8 @@ class AIOEndpointCase(AIOTestCase):
         await asyncio.wait_for(ep.on_start(), TEST_TIMEOUT)
         self.discovery.register(ep)
 
-        ctx = self.ctx
-        res = await asyncio.wait_for(ctx.rpc.dummy.ping(), TEST_TIMEOUT)
-        ctx.span.finish()
+        with self.ctx as ctx:
+            res = await asyncio.wait_for(ctx.rpc.dummy.ping(), TEST_TIMEOUT)
         self.assertEqual(res, 'pong')
         self.assertEquals(len(self.recorder.get_spans()), 2)
         spans = [(x.context.span_id, x.context.trace_id) for x in self.recorder.get_spans()]

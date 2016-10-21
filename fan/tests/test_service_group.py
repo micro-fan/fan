@@ -94,9 +94,10 @@ class ProcessTestCase(TestCase):
         context = self.process.create_context()
 
         context.discovery.register(LocalEndpoint(DummyTracer()))
-        response = context.rpc.dummy_tracer.echo('hello', 7)
+        with context:
+            response = context.rpc.dummy_tracer.echo('hello', 7)
 
-        self.assertEquals(len(self.recorder.get_spans()), 8)
+        self.assertEquals(len(self.recorder.get_spans()), 9)
         assert response == ('hello', 0), response
 
 
@@ -120,6 +121,7 @@ class MultiProcessTestCase(TestCase):
 
     def test_call(self):
         context = self.p1.create_context()
-        result = context.rpc.chained_echo.echo('hello')
+        with context:
+            result = context.rpc.chained_echo.echo('hello')
         self.assertEqual(result, 'hello')
-        self.assertEquals(len(self.recorder.get_spans()), 2)
+        self.assertEquals(len(self.recorder.get_spans()), 3)

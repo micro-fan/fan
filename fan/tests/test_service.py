@@ -27,8 +27,10 @@ class FanTest(TestCase):
 class ServiceTest(FanTest):
     def test_01_simple(self):
         msg = 'test_message'
-        self.assertEqual(self.context.rpc.dummy.echo(msg), msg)
+        with self.context:
+            self.assertEqual(self.context.rpc.dummy.echo(msg), msg)
 
     def test_02_tree(self):
         msg = 'test_message'
-        self.assertEqual(self.context.rpc.nested.tree.dummy.echo(msg), msg)
+        with self.context:
+            self.assertEqual(self.context.rpc.nested.tree.dummy.echo(msg), msg)

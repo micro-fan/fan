@@ -16,12 +16,14 @@ class Context:
             parent_context = parent
         self.span = discovery.tracer.start_span(child_of=parent_context,
                                                 operation_name=name)
+        self._entered = False
 
     def create_child_context(self, name=None):
         return Context(self.discovery, self.service, self, name)
 
     @property
     def rpc(self):
+        assert self._entered, 'You must enter context before call .rpc'
         return RPC(self)
 
     def pre_call(self):
@@ -31,6 +33,7 @@ class Context:
         self.span.finish()
 
     def __enter__(self, *args):
+        self._entered = True
         self.pre_call()
         return self
 
