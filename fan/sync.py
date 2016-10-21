@@ -2,6 +2,8 @@
 Shortlived sync helpers. Primary target is creating short-lived fast context with get_context
 '''
 import os
+import time
+import json
 
 from basictracer import BasicTracer
 from basictracer.recorder import InMemoryRecorder
@@ -15,12 +17,26 @@ discovery = None
 tracer = None
 
 
+class FanRecorder(InMemoryRecorder):
+
+    def record_span(self, span):
+        with open('/tmp/trace_{}'.format(time.time()*1000000), 'w') as f:
+            ctx = span.context
+            ctx_row = {'trace_id': ctx.trace_id,
+                       'span_id': ctx.span_id,
+                       'sampled': ctx.sampled,
+                       'parent_id': span.parent_id}
+            json.dump(ctx_row, f)
+
+        return super().record_span(span)
+
+
 def get_tracer():
     # TODO: get tracer configuration from ENV
     global tracer
     if tracer:
         return tracer
-    recorder = InMemoryRecorder()
+    recorder = FanRecorder()
     tracer = BasicTracer(recorder)
     return tracer
 

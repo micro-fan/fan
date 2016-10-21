@@ -19,16 +19,15 @@ class FanMiddleware(object):
         We're performing initialization when request.ctx is called
         So set property here
         '''
-        def __inner(request):
-            if hasattr(request, '_ctx'):
-                return request._ctx
-            discovery = get_discovery(is_django=True)
-            tracer = discovery.tracer
+        if hasattr(request, '_ctx'):
+            return request._ctx
+        discovery = get_discovery(is_django=True)
+        tracer = discovery.tracer
 
-            span_context = tracer.extract('http', request.META)
+        span_context = tracer.extract('http', request.META)
+        if span_context:
             ctx = Context(discovery, None, span_context)
-            request._ctx = ctx
-            return ctx
-        # NB: descriptor protocol require property to be attached to class, not instance
-        request.__class__.ctx = property(__inner)
+            request.ctx = ctx
+            with ctx.span:
+                return self.get_response(request)
         return self.get_response(request)
