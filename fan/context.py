@@ -23,6 +23,14 @@ class Context:
 
     @property
     def rpc(self):
+        '''
+        if you generate totally new context, you must enter it before use:
+        >>> with new_ctx:
+               # now you may call new_ctx.rpc
+               new_ctx.rpc.some_endpoint.ping()
+        for most services it would be started when accepting incoming request in RemoteEndpoint,
+        so you should not do that in services
+        '''
         assert self._entered, 'You must enter context before call .rpc'
         return RPC(self)
 
