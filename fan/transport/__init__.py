@@ -10,8 +10,10 @@ from fan.remote import Transport
 def hex_string(i):
     return '{:x}'.format(i)
 
+
 def from_hex_string(s):
     return int(s, 16)
+
 
 class HTTPPropagator(Propagator):
     mapping = {
@@ -30,6 +32,25 @@ class HTTPPropagator(Propagator):
     def extract(self, carrier):
         # TODO: support ot-debug => override sampled to true
         # generate custom label
+        try:
+            kwargs = {'baggage': {}}
+            for k, v in self.mapping.items():
+                name, _, extract = v
+                kwargs[k] = extract(carrier[name])
+            return SpanContext(**kwargs)
+        except:
+            pass
+
+
+class DjangoPropagator(HTTPPropagator):
+    mapping = {
+        'span_id': ('HTTP_OT_SPAN_ID', hex_string, from_hex_string),
+        'trace_id': ('HTTP_OT_TRACE_ID', hex_string, from_hex_string),
+        # 'baggage': 'ot-baggage',
+        'sampled': ('HTTP_OT_SAMPLED', str, bool),
+    }
+
+    def extract(self, carrier):
         try:
             kwargs = {'baggage': {}}
             for k, v in self.mapping.items():
