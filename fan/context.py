@@ -46,4 +46,6 @@ class Context:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            self.span.set_tag('error', '{} {}'.format(exc_type, exc_val))
         self.post_call()

@@ -26,8 +26,8 @@ class FanMiddleware(object):
 
         span_context = tracer.extract('http', request.META)
         if span_context:
-            ctx = Context(discovery, None, span_context)
+            ctx = Context(discovery, None, span_context, request.method)
             request.ctx = ctx
-            with ctx.span:
+            with ctx:
                 return self.get_response(request)
         return self.get_response(request)

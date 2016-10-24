@@ -11,4 +11,5 @@ requests==2.11.1
 pyyaml==3.12
 kazoo==2.2.1
 aiozk>=0.1.7
-tipsi_tools>=0.13.0
+tipsi_tools>=0.14.3
+py_zipkin==0.4.0
