@@ -9,7 +9,7 @@ import socket
 import requests
 from basictracer import BasicTracer
 from basictracer.recorder import InMemoryRecorder
-from py_zipkin.logging_helper import log_span
+from py_zipkin.logging_helper import log_span as zipkin_log_span
 from py_zipkin.thrift import (annotation_list_builder, create_endpoint,
                               binary_annotation_list_builder)
 
@@ -20,6 +20,7 @@ from fan.transport import HTTPTransport, HTTPPropagator, DjangoPropagator
 
 discovery = None
 tracer = None
+ZIPKIN = os.environ.get('ZIPKIN')
 
 
 def http_transport(encoded_span):
@@ -29,7 +30,7 @@ def http_transport(encoded_span):
     # add header bytes that specify that what follows is a list of length 1.
     body = b'\x0c\x00\x00\x00\x01' + encoded_span
     r = requests.post(
-        'http://zipkin:9411/api/v1/spans',
+        'http://{}/api/v1/spans'.format(ZIPKIN),
         data=body,
         headers={'Content-Type': 'application/x-thrift'},
     )
@@ -39,10 +40,17 @@ MY_IP = socket.gethostbyname(socket.gethostname())
 EP = None
 
 
+def logger_log_span(span_id, parent_span_id, trace_id, span_name, annotations,
+                    binary_annotations, **kwargs):
+    print(annotations)
+    print(kwargs)
+
+
 class FanRecorder(InMemoryRecorder):
-    def __init__(self, name):
+    def __init__(self, name, log_span):
         super().__init__()
         self.name = name
+        self.log_span = log_span
 
     def record_span(self, span):
         global EP
@@ -62,7 +70,7 @@ class FanRecorder(InMemoryRecorder):
             'binary_annotations': binary_annotation_list_builder(span.tags, EP),
             'transport_handler': http_transport,
         }
-        log_span(**params)
+        self.log_span(**params)
         with open('/tmp/trace_{}'.format(time.time()*1000000), 'w') as f:
             ctx_row = {'trace_id': ctx.trace_id,
                        'span_id': ctx.span_id,
@@ -74,11 +82,17 @@ class FanRecorder(InMemoryRecorder):
 
 
 def get_tracer(name=None):
-    # TODO: get tracer configuration from ENV
     global tracer
     if tracer:
         return tracer
-    recorder = FanRecorder(name or 'no_name')
+    if not name:
+        name = 'no_name'
+
+    if ZIPKIN:
+        log_span = zipkin_log_span
+    else:
+        log_span = logger_log_span
+    recorder = FanRecorder(name, log_span)
     tracer = BasicTracer(recorder)
     return tracer
 

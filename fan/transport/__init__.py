@@ -95,5 +95,7 @@ class HTTPTransport(Transport):
         elif resp.status_code in (204,):
             ret = True
         else:
+            # TODO: howto return error
             self.log.error('Resp: {} : {}'.format(resp.status_code, resp))
+            ret = None
         return ret

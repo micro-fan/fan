@@ -42,7 +42,9 @@ class KazooDiscovery(RemoteDiscovery):
 
     def create_endpoint(self, name, path, configs):
         # TODO: pass all configs
-        config = sorted(configs)[-1]
+        configs = sorted(configs)
+        assert len(configs), configs
+        config = configs[-1]
         dpath = '{}/{}'.format(path, config)
         data = self.zk.get(dpath)[0].decode('utf8')
         self.log.debug('GET DATA: {!r}'.format(data))

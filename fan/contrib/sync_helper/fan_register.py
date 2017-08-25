@@ -4,7 +4,7 @@ import re
 import sys
 import yaml
 
-from . import SyncHelper
+from fan.contrib.sync_helper import SyncHelper
 
 
 R = re.compile('%\{(.*?)\}')
