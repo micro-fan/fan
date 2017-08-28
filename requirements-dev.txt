@@ -1,0 +1,5 @@
+-r requirements.txt
+ipython==5.0.0
+green==2.5.1
+mypy-lang==0.4.4
+typed_ast==0.5.5

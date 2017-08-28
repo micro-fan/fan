@@ -10,7 +10,8 @@ RUN update-alternatives --install /usr/bin/python3 python3.5 /usr/bin/python3.5 
 WORKDIR /code
 
 ADD requirements.txt /code/requirements.txt
-RUN pip3 install -r requirements.txt
+ADD requirements-dev.txt /code/requirements-dev.txt
+RUN pip3 install -r requirements-dev.txt
 
 
 ADD . /code

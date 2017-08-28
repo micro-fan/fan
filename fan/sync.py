@@ -9,9 +9,10 @@ import socket
 import requests
 from basictracer import BasicTracer
 from basictracer.recorder import InMemoryRecorder
-from py_zipkin.logging_helper import log_span as zipkin_log_span
+from py_zipkin.zipkin import ZipkinAttrs
 from py_zipkin.thrift import (annotation_list_builder, create_endpoint,
-                              binary_annotation_list_builder)
+                              binary_annotation_list_builder,
+                              create_span, thrift_obj_in_bytes)
 
 from fan.context import Context
 from fan.contrib.kazoo.discovery import KazooDiscovery
@@ -29,7 +30,7 @@ def http_transport(encoded_span):
     # decoding and re-encoding the already thrift-encoded message, we can just
     # add header bytes that specify that what follows is a list of length 1.
     body = b'\x0c\x00\x00\x00\x01' + encoded_span
-    r = requests.post(
+    requests.post(
         'http://{}/api/v1/spans'.format(ZIPKIN),
         data=body,
         headers={'Content-Type': 'application/x-thrift'},
@@ -44,6 +45,13 @@ def logger_log_span(span_id, parent_span_id, trace_id, span_name, annotations,
                     binary_annotations, **kwargs):
     print(annotations)
     print(kwargs)
+
+
+def zipkin_log_span(span_id, parent_span_id, trace_id, span_name, annotations,
+                    binary_annotations, timestamp_s, duration_s, **kwargs):
+    http_transport(thrift_obj_in_bytes(create_span(span_id, parent_span_id, trace_id, span_name,
+                                                   annotations, binary_annotations,
+                                                   timestamp_s, duration_s)))
 
 
 class FanRecorder(InMemoryRecorder):
@@ -61,16 +69,27 @@ class FanRecorder(InMemoryRecorder):
         timing = {'ss': span.start_time,
                   'sr': span.start_time+span.duration}
         annotations = annotation_list_builder(timing, EP)
+        attrs = ZipkinAttrs(trace_id=hex(ctx.trace_id)[2:],
+                            span_id=hex(ctx.span_id)[2:],
+                            parent_span_id=span.parent_id and hex(span.parent_id)[2:],
+                            flags=0,
+                            is_sampled=True)
         params = {
-            'span_id': hex(ctx.span_id),
-            'parent_span_id': span.parent_id and hex(span.parent_id),
-            'trace_id': hex(ctx.trace_id),
+            'zipkin_attrs': attrs,
+            'trace_id': hex(ctx.trace_id)[2:],
+            'span_id': hex(ctx.span_id)[2:],
+            'parent_span_id': span.parent_id and hex(span.parent_id)[2:],
+            'service_name': self.name,
             'span_name': span.operation_name or 'no_name',
             'annotations': annotations,
             'binary_annotations': binary_annotation_list_builder(span.tags, EP),
             'transport_handler': http_transport,
+            'timestamp_s': span.start_time,
+            'duration_s': span.duration,
         }
+
         self.log_span(**params)
+
         with open('/tmp/trace_{}'.format(time.time()*1000000), 'w') as f:
             ctx_row = {'trace_id': ctx.trace_id,
                        'span_id': ctx.span_id,

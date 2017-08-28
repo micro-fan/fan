@@ -1,15 +1,10 @@
-green==2.5.1
-ipython==5.0.0
-# install from master until version 0.4.4 is out
-mypy-lang==0.4.4
-typed_ast==0.5.5
-opentracing
-basictracer==2.1.0
+opentracing==1.2.2
+basictracer==2.2.0
 aioredis==0.2.8
 asynqp==0.5.1
 requests==2.11.1
 pyyaml==3.12
 kazoo==2.2.1
 aiozk>=0.1.7
-tipsi_tools>=0.14.3
-py_zipkin==0.4.0
+tipsi_tools>=1.4.0
+py_zipkin==0.8.3

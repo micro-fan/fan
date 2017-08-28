@@ -1,9 +1,11 @@
 from setuptools import setup, find_packages
+from pip.req import parse_requirements
+
 
 setup(
     name='fan',
     packages=find_packages(),
-    version='0.2.0',
+    version='0.3.0',
     description='microservices kit',
     author='cybergrind',
     author_email='cybergrind@gmail.com',
@@ -15,4 +17,12 @@ setup(
             'fan=fan.scripts.fan:main',
         ]
     },
+    install_requires=[
+        'opentracing',
+        'basictracer',
+        'requests',
+        'kazoo',
+        'tipsi_tools',
+        'py_zipkin'
+    ],
 )
