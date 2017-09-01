@@ -25,6 +25,8 @@ You may use `<<: *anchor_name` to merge common parts into config, like hostname 
 
 Other things specified by transports, eg. http transport may use passed parameters in url.
 
+You may use `%{LOCAL_IP}` in docker, it would be set to internal ip of docker container.
+
 ```yaml
 base: &base
   host: '%{HOSTNAME}'

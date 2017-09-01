@@ -1,10 +1,11 @@
 '''
 Shortlived sync helpers. Primary target is creating short-lived fast context with get_context
 '''
-import os
-import time
 import json
+import logging
+import os
 import socket
+import time
 
 import requests
 from basictracer import BasicTracer
@@ -12,7 +13,7 @@ from basictracer.recorder import InMemoryRecorder
 from py_zipkin.zipkin import ZipkinAttrs
 from py_zipkin.thrift import (annotation_list_builder, create_endpoint,
                               binary_annotation_list_builder,
-                              create_span, thrift_obj_in_bytes)
+                              create_span, thrift_objs_in_bytes)
 
 from fan.context import Context
 from fan.contrib.kazoo.discovery import KazooDiscovery
@@ -29,29 +30,29 @@ def http_transport(encoded_span):
     # The collector expects a thrift-encoded list of spans. Instead of
     # decoding and re-encoding the already thrift-encoded message, we can just
     # add header bytes that specify that what follows is a list of length 1.
-    body = b'\x0c\x00\x00\x00\x01' + encoded_span
     requests.post(
-        'http://{}/api/v1/spans'.format(ZIPKIN),
-        data=body,
+        'http://{}/api/v2/spans'.format(ZIPKIN),
+        data=encoded_span,
         headers={'Content-Type': 'application/x-thrift'},
     )
 
 
 MY_IP = socket.gethostbyname(socket.gethostname())
 EP = None
+log = logging.getLogger('fan.sync')
 
 
 def logger_log_span(span_id, parent_span_id, trace_id, span_name, annotations,
                     binary_annotations, **kwargs):
-    print(annotations)
-    print(kwargs)
+    log.info('Log span: {}'.format(locals()))
 
 
 def zipkin_log_span(span_id, parent_span_id, trace_id, span_name, annotations,
                     binary_annotations, timestamp_s, duration_s, **kwargs):
-    http_transport(thrift_obj_in_bytes(create_span(span_id, parent_span_id, trace_id, span_name,
-                                                   annotations, binary_annotations,
-                                                   timestamp_s, duration_s)))
+    span = create_span(span_id, parent_span_id, trace_id, span_name,
+                       annotations, binary_annotations,
+                       timestamp_s, duration_s)
+    http_transport(thrift_objs_in_bytes([span]))
 
 
 class FanRecorder(InMemoryRecorder):

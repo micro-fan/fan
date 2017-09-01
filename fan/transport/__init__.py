@@ -77,6 +77,15 @@ class HTTPTransport(Transport):
         tracer.inject(ctx.span.context, 'http', hdrs)
         return hdrs
 
+    def prepare_get_params(self, params):
+        out = {}
+        for k, v in params.items():
+            if isinstance(v, list):
+                out[k] = ','.join([str(x) for x in v])
+            else:
+                out[k] = v
+        return out
+
     def rpc_call(self, method_name, ctx, **kwargs):
         method = self.methods[method_name]
         url = ''.join([self.base_url, method['url']])
@@ -85,9 +94,10 @@ class HTTPTransport(Transport):
         m = method.get('method', 'get').lower()
         req = getattr(requests, m)
         if m in ('get', 'delete'):
-            kw = {'params': kwargs}
+            kw = {'params': self.prepare_get_params(kwargs)}
         else:
             kw = {'json': kwargs}
+        self.log.debug('Url: {} Params: {}'.format(url, kw))
         kw['headers'] = self.get_headers(ctx)
         resp = req(url, **kw)
         if resp.status_code in (200, 201):
@@ -97,5 +107,5 @@ class HTTPTransport(Transport):
         else:
             # TODO: howto return error
             self.log.error('Resp: {} : {}'.format(resp.status_code, resp))
-            ret = None
+            raise Exception('HttpError: {}'.format(resp))
         return ret

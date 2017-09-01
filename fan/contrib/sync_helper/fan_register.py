@@ -35,10 +35,20 @@ def traverse(obj):
     return obj
 
 
+def setup_local_ip():
+    if not os.path.exists('/.dockerenv'):
+        return
+    with open('/etc/hosts') as f:
+        lines = f.readlines()
+    local_ip = lines[-1].strip().split()[0]
+    os.environ['LOCAL_IP'] = local_ip
+
+
 def main():
     args = sys.argv[1:]
     assert len(args) == 1, 'Give yaml config name'
     zk_config = os.environ.get('ZK_HOST')
+    setup_local_ip()
     conf = traverse(yaml.load(open(args[0])))
     print('Call with conf: {}'.format(conf))
     loop = asyncio.get_event_loop()

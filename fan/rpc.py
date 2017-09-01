@@ -1,6 +1,10 @@
 import logging
 
 
+class RPCException(Exception):
+    pass
+
+
 class Caller:
     log = logging.getLogger('Caller')
 
@@ -27,6 +31,8 @@ class Caller:
             with self.parent_context.create_child_context() as ctx:
                 method_name = self.call_path[-1]
                 return endpoint.perform_call(ctx, method_name, *args, **kwargs)
+        else:
+            raise RPCException('No such enpoint')
 
 
 class RPC:
