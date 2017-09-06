@@ -93,11 +93,12 @@ class HTTPTransport(Transport):
             url = url.format(**kwargs)
         m = method.get('method', 'get').lower()
         req = getattr(requests, m)
+
         if m in ('get', 'delete'):
             kw = {'params': self.prepare_get_params(kwargs)}
         else:
             kw = {'json': kwargs}
-        self.log.debug('Url: {} Params: {}'.format(url, kw))
+        self.log.debug('Url: {} Params: {} Func: {}'.format(url, kw, req))
         kw['headers'] = self.get_headers(ctx)
         resp = req(url, **kw)
         if resp.status_code in (200, 201):
@@ -107,5 +108,9 @@ class HTTPTransport(Transport):
         else:
             # TODO: howto return error
             self.log.error('Resp: {} : {}'.format(resp.status_code, resp))
-            raise Exception('HttpError: {}'.format(resp))
+            try:
+                error_msg = resp.json()
+            except Exception:
+                error_msg = ''
+            raise Exception('HttpError: {} {}'.format(resp, error_msg))
         return ret

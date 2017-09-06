@@ -4,7 +4,7 @@ from fan.contrib.amqp import AMQPEndpoint, AMQPTransport
 from fan.contrib.aio.tests import AIOEndpointCase
 
 
-class RedisCase(AIOEndpointCase):
+class AMQPCase(AIOEndpointCase):
     endpoint_class = AMQPEndpoint
     transport_class = AMQPTransport
     endpoint_params = {'host': os.environ.get('AMQP_HOST', 'rabbitmq'),
