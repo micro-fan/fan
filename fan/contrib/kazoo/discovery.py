@@ -1,10 +1,14 @@
 import json
 import logging
+import re
 
 from kazoo.client import KazooClient
 
 from fan.discovery import RemoteDiscovery
 from fan.remote import ProxyEndpoint
+
+
+VSN_RE = re.compile('^\d+(\.\d+){,2}$')
 
 
 class KazooDiscovery(RemoteDiscovery):
@@ -29,7 +33,7 @@ class KazooDiscovery(RemoteDiscovery):
         childs = self.zk.get_children(path)
         if len(childs) == 0:
             return
-
+        childs = [x for x in childs if VSN_RE.match(x)]
         version = sorted(childs)[-1]
         vpath = '{}/{}'.format(path, version)
         configs = self.zk.get_children(vpath)
@@ -43,7 +47,7 @@ class KazooDiscovery(RemoteDiscovery):
     def create_endpoint(self, name, path, configs):
         # TODO: pass all configs
         configs = sorted(configs)
-        assert len(configs), configs
+        assert len(configs), (name, path, configs)
         config = configs[-1]
         dpath = '{}/{}'.format(path, config)
         data = self.zk.get(dpath)[0].decode('utf8')
