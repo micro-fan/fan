@@ -19,7 +19,7 @@ services:
 
   fan:
     build: .
-    command: green
+    command: bash -c "sleep 15 && green"
     depends_on:
       - redis
       - rabbitmq
