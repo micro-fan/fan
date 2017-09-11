@@ -10,6 +10,7 @@ setup(
     author='cybergrind',
     author_email='cybergrind@gmail.com',
     keywords=['rpc', 'microservices'],
+    url='https://github.com/tipsi/fan',
     classifiers=[],
     entry_points={
         'console_scripts': [
