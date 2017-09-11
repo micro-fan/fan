@@ -8,7 +8,7 @@ from fan.discovery import RemoteDiscovery
 from fan.remote import ProxyEndpoint
 
 
-VSN_RE = re.compile('^\d+(\.\d+){,2}$')
+VSN_RE = re.compile(r'^\d+(\.\d+){,2}$')
 
 
 class KazooDiscovery(RemoteDiscovery):

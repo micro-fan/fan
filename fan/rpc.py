@@ -28,7 +28,8 @@ class Caller:
                                                                version_filter=None)
         self.log.debug('RPCEndpoint: {}'.format(endpoint))
         if endpoint:
-            with self.parent_context.create_child_context() as ctx:
+            name = '.'.join(self.call_path)
+            with self.parent_context.create_child_context(name=name) as ctx:
                 method_name = self.call_path[-1]
                 return endpoint.perform_call(ctx, method_name, *args, **kwargs)
         else:

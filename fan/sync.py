@@ -31,7 +31,7 @@ def http_transport(encoded_span):
     # decoding and re-encoding the already thrift-encoded message, we can just
     # add header bytes that specify that what follows is a list of length 1.
     requests.post(
-        'http://{}/api/v2/spans'.format(ZIPKIN),
+        'http://{}/api/v1/spans'.format(ZIPKIN),
         data=encoded_span,
         headers={'Content-Type': 'application/x-thrift'},
     )
@@ -53,6 +53,12 @@ def zipkin_log_span(span_id, parent_span_id, trace_id, span_name, annotations,
                        annotations, binary_annotations,
                        timestamp_s, duration_s)
     http_transport(thrift_objs_in_bytes([span]))
+
+    params = {'timestamp_s': timestamp_s,
+              'duration_s': duration_s,
+              **kwargs}
+    logger_log_span(span_id, parent_span_id, trace_id, span_name, annotations,
+                    binary_annotations, **params)
 
 
 class FanRecorder(InMemoryRecorder):
@@ -139,5 +145,7 @@ def get_discovery(is_django=False, name=None):
     return discovery
 
 
-def get_context(name=None):
-    return Context(get_discovery(is_django=False, name=name))
+def get_context(name=None, service_name=None):
+    if not service_name and name:
+        service_name = name
+    return Context(get_discovery(is_django=False, name=service_name), name=name)

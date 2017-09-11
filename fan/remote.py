@@ -51,7 +51,7 @@ class ProxyEndpoint(Endpoint):
     def perform_call(self, ctx, method_name, *args, **kwargs):
         if not self.transport.started:
             self.transport.on_start()
-        ctx.span.operation_name = method_name
+        # ctx.span.operation_name = method_name
         return self.transport.rpc_call(method_name, ctx, *args, **kwargs)
 
     def on_start(self):

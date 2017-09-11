@@ -17,5 +17,5 @@ def main():
     print('ARGS: {}'.format(args))
 
     loop = asyncio.get_event_loop()
-    task = asyncio.ensure_task(run_cmd(args.cmd[0]))
+    task = asyncio.ensure_future(run_cmd(args.cmd[0]))
     loop.run_until_complete(task)

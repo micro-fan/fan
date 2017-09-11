@@ -87,6 +87,7 @@ class HTTPTransport(Transport):
         return out
 
     def rpc_call(self, method_name, ctx, **kwargs):
+        assert method_name in self.methods, 'Cannot find endpoint'
         method = self.methods[method_name]
         url = ''.join([self.base_url, method['url']])
         if '{' in url:
@@ -111,6 +112,6 @@ class HTTPTransport(Transport):
             try:
                 error_msg = resp.json()
             except Exception:
-                error_msg = ''
+                error_msg = 'Non-json response'
             raise Exception('HttpError: {} {}'.format(resp, error_msg))
         return ret
