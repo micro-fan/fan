@@ -5,6 +5,7 @@ asynqp==0.5.1
 requests==2.11.1
 pyyaml==3.12
 kazoo==2.2.1
-aiozk>=0.1.7
-tipsi_tools>=1.4.0
 py_zipkin==0.8.3
+
+aiozk==0.5.3
+tipsi_tools==0.5.0

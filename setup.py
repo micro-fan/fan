@@ -5,7 +5,7 @@ from pip.req import parse_requirements
 setup(
     name='fan',
     packages=find_packages(),
-    version='0.5.0',
+    version='0.5.1',
     description='microservices kit',
     author='cybergrind',
     author_email='cybergrind@gmail.com',

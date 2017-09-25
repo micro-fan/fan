@@ -1,8 +1,20 @@
 import logging
 
-from fan.sync import get_discovery
-from fan.context import Context
 from django.conf import settings
+
+from fan.context import Context
+from fan.sync import get_discovery
+
+
+VARS = {}
+
+
+def update_vars(ctx):
+    span = ctx.span
+    _ctx = ctx.span.context
+    VARS['TRACE_ID'] = hex(_ctx.trace_id)[2:]
+    VARS['SPAN_ID'] = hex(_ctx.span_id)[2:]
+    VARS['PARENT_SPAN_ID'] = span.parent_id and hex(span.parent_id)[2:]
 
 
 class FanMiddleware(object):
@@ -29,7 +41,9 @@ class FanMiddleware(object):
         name = '{} {}'.format(request.method, request.path)
         if span_context:
             ctx = Context(discovery, None, span_context, name)
-            request.ctx = ctx
-            with ctx:
-                return self.get_response(request)
-        return self.get_response(request)
+        else:
+            ctx = Context(discovery, None, None, name)
+        request.ctx = ctx
+        with ctx:
+            update_vars(ctx)
+            return self.get_response(request)

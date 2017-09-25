@@ -1,4 +1,6 @@
+import asyncio
 import json
+import logging
 
 from aiozk import ZKClient, exc
 
@@ -7,6 +9,8 @@ from fan.contrib.aio.remote import AIOProxyEndpoint
 
 
 class ZKDiscovery(RemoteDiscovery):
+    log = logging.getLogger('fan.aio.ZKDiscovery')
+
     def __init__(self, zk_path, chroot=None):
         super().__init__()
         self.zk = ZKClient(zk_path, chroot)
@@ -27,14 +31,27 @@ class ZKDiscovery(RemoteDiscovery):
             await self.create(curr, container=True)
         curr += '/config_'
         if not (isinstance(data, str) or isinstance(data, bytes)):
-            data = json.dumps(data)
+            data = json.dumps(data).encode()
         out = await self.create(curr, data=data, ephemeral=True, sequential=True)
-        return out
+        return out, data
 
     async def on_start(self):
         await self.zk.start()
         if not await self.zk.exists('/endpoints'):
             await self.zk.create('/endpoints')
+        asyncio.ensure_future(self._check_zk())
+        self.data_watcher = self.zk.recipes.DataWatcher()
+        self.data_watcher.set_client(self.zk)
+
+    async def _check_zk(self):
+        try:
+            while True:
+                await self.zk.session.ensure_safe_state()
+                self.log.debug('ZK session is ok. looping...')
+                await asyncio.sleep(5)
+        except Exception as e:
+            self.log.exception('Session closed')
+            asyncio.get_event_loop().stop()
 
     async def register(self, endpoint) -> str:
         name = endpoint.name
@@ -76,10 +93,11 @@ class ZKDiscovery(RemoteDiscovery):
         return AIOProxyEndpoint(self, name, params)
 
     def watch(self, path, callback):
+        self.data_watcher.add_callback(path, callback)
         pass
 
     def unwatch(self, path, callback):
-        pass
+        self.data_watcher.remove_callback(path, callback)
 
 
 class AIOCompositeDiscovery(CompositeDiscovery):

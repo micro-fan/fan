@@ -1,8 +1,6 @@
 import logging
 
-
-class RPCException(Exception):
-    pass
+from fan.exceptions import RPCException
 
 
 class Caller:

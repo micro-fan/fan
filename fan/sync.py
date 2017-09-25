@@ -17,6 +17,7 @@ from py_zipkin.thrift import (annotation_list_builder, create_endpoint,
 
 from fan.context import Context
 from fan.contrib.kazoo.discovery import KazooDiscovery
+from fan.exceptions import DiscoveryConnectionError
 from fan.transport import HTTPTransport, HTTPPropagator, DjangoPropagator
 
 
@@ -129,7 +130,10 @@ def get_discovery(is_django=False, name=None):
     if discovery:
         return discovery
     discovery = KazooDiscovery(os.environ.get('ZK_HOST', 'zk'))
-    discovery.on_start()
+    try:
+        discovery.on_start()
+    except Exception as e:
+        raise DiscoveryConnectionError from e
     discovery.transport_classes = {
         'http': HTTPTransport,
     }

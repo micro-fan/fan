@@ -55,7 +55,8 @@ class DjangoPropagator(HTTPPropagator):
             kwargs = {'baggage': {}}
             for k, v in self.mapping.items():
                 name, _, extract = v
-                kwargs[k] = extract(carrier[name])
+                key = name if name in carrier else 'HTTP_{}'.format(name)
+                kwargs[k] = extract(carrier[key])
             return SpanContext(**kwargs)
         except:
             pass

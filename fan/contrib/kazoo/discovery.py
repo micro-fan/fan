@@ -13,13 +13,14 @@ VSN_RE = re.compile(r'^\d+(\.\d+){,2}$')
 
 class KazooDiscovery(RemoteDiscovery):
     log = logging.getLogger('KazooDiscovery')
+    timeout = 5
 
     def __init__(self, zk_path, chroot=None):
         super().__init__()
-        self.zk = KazooClient(hosts=zk_path)
+        self.zk = KazooClient(hosts=zk_path, timeout=self.timeout)
 
     def on_start(self):
-        self.zk.start()
+        self.zk.start(timeout=self.timeout)
 
     def on_stop(self):
         self.zk.stop()
