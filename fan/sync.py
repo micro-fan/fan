@@ -140,10 +140,6 @@ def cache_discovery(fun):
 def get_discovery(is_django=False, name=None):
     # TODO: get root
     discovery = KazooDiscovery(os.environ.get('ZK_HOST', 'zk'))
-    try:
-        discovery.on_start()
-    except Exception as e:
-        raise DiscoveryConnectionError from e
     discovery.transport_classes = {
         'http': HTTPTransport,
     }

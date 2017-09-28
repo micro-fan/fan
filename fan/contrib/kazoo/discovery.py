@@ -11,13 +11,39 @@ from fan.remote import ProxyEndpoint
 VSN_RE = re.compile(r'^\d+(\.\d+){,2}$')
 
 
+class KazooWrapper:
+    """
+    Wrapper that ensure that we connect to zookeeper only when need it.
+    Prevents connection on error request.
+    """
+    log = logging.getLogger('KazooWrapper')
+
+    def __init__(self, *args, **kwargs):
+        self.zk = KazooClient(*args, **kwargs)
+        self._started = False
+
+    def start(self):
+        self.log.debug('Connect')
+        self.zk.start()
+        self._started = True
+
+    def stop(self):
+        if self._started:
+            self.zk.stop()
+
+    def __getattr__(self, name):
+        if not self._started:
+            self.start()
+        return getattr(self.zk, name)
+
+
 class KazooDiscovery(RemoteDiscovery):
     log = logging.getLogger('KazooDiscovery')
     timeout = 5
 
     def __init__(self, zk_path, chroot=None):
         super().__init__()
-        self.zk = KazooClient(hosts=zk_path, timeout=self.timeout)
+        self.zk = KazooWrapper(hosts=zk_path, timeout=self.timeout)
 
     def on_start(self):
         self.zk.start(timeout=self.timeout)
