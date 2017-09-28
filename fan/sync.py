@@ -1,6 +1,7 @@
 '''
 Shortlived sync helpers. Primary target is creating short-lived fast context with get_context
 '''
+from functools import wraps
 import json
 import logging
 import os
@@ -124,11 +125,20 @@ def get_tracer(name=None):
     return tracer
 
 
+def cache_discovery(fun):
+    @wraps(fun)
+    def wrapped(*args, **kwargs):
+        global discovery
+        if discovery:
+            return discovery
+        discovery = fun(*args, **kwargs)
+        return discovery
+    return wrapped
+
+
+@cache_discovery
 def get_discovery(is_django=False, name=None):
     # TODO: get root
-    global discovery
-    if discovery:
-        return discovery
     discovery = KazooDiscovery(os.environ.get('ZK_HOST', 'zk'))
     try:
         discovery.on_start()
