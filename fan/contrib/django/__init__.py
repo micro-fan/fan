@@ -1,10 +1,11 @@
 import logging
 
 from django.conf import settings
+from django.http import HttpResponse
 
 from fan.context import Context
+from fan.exceptions import RPCHttpError
 from fan.sync import get_discovery
-
 
 VARS = {}
 
@@ -47,3 +48,12 @@ class FanMiddleware(object):
         with ctx:
             update_vars(ctx)
             return self.get_response(request)
+
+    def process_exception(self, request, exception):
+        if isinstance(exception, RPCHttpError):
+            resp = exception.response
+            return HttpResponse(
+                content=resp.content,
+                status=resp.status_code,
+                content_type=resp.headers['Content-Type']
+            )

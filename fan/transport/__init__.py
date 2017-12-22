@@ -5,6 +5,7 @@ from basictracer.propagator import Propagator
 from basictracer.context import SpanContext
 
 from fan.remote import Transport
+from fan.exceptions import RPCHttpError
 
 
 def hex_string(i):
@@ -110,9 +111,5 @@ class HTTPTransport(Transport):
         else:
             # TODO: howto return error
             self.log.error('Resp: {} : {}'.format(resp.status_code, resp))
-            try:
-                error_msg = resp.json()
-            except Exception:
-                error_msg = 'Non-json response'
-            raise Exception('HttpError: {} {}'.format(resp, error_msg))
+            raise RPCHttpError(resp)
         return ret

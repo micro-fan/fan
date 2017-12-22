@@ -1,11 +1,16 @@
 from setuptools import setup, find_packages
 from pip.req import parse_requirements
 
+with open('fan/__init__.py', 'r') as f:
+    for line in f:
+        if line.startswith('__version__'):
+            version = line.strip().split('=')[1].strip(' \'"')
+            break
 
 setup(
     name='fan',
     packages=find_packages(),
-    version='0.5.2',
+    version=version,
     description='microservices kit',
     author='cybergrind',
     author_email='cybergrind@gmail.com',
