@@ -7,9 +7,12 @@ parser.add_argument('cmd', nargs='*', help='command to execute')
 
 
 async def run_cmd(cmd):
-    ctx = 'get_ctx'
-    full_cmd = 'ctx.rpc.{}'.format(cmd)
-    print('eval: {}'.format(full_cmd))
+    from fan.sync import get_context
+    ctx = get_context()
+    with ctx:
+        full_cmd = 'ctx.rpc.{}'.format(cmd)
+        print('eval: {}'.format(full_cmd))
+        print(eval(full_cmd))
 
 
 def main():
