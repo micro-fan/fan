@@ -1,10 +1,10 @@
 opentracing==1.2.2
 basictracer==2.2.0
-aioredis==0.2.8
+aioredis==1.0.0
 asynqp==0.5.1
 requests==2.11.1
 pyyaml==3.12
-kazoo==2.2.1
+kazoo==2.4.0
 py_zipkin==0.8.3
 
 aiozk==0.5.3

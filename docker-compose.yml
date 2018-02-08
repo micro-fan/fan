@@ -4,22 +4,23 @@ services:
   redis:
     image: redis:2.8
     ports:
-      - 6379:6379
+      - 6379
 
   rabbitmq:
     image: rabbitmq:3-management
     ports:
-      - 15673:15672
-      - 5672:5672
+      - 15672
+      - 5672
 
   zk:
     image: jplock/zookeeper:3.5.2-alpha
     ports:
-      - 2182:2181
+      - 2181
 
   fan:
     build: .
-    command: bash -c "sleep 15 && green"
+    command: bash -c "sleep 15 && pytest"
+    # command: sleep infinity
     depends_on:
       - redis
       - rabbitmq
