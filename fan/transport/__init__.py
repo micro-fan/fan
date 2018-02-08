@@ -1,5 +1,6 @@
 import logging
 import requests
+import json
 
 from basictracer.propagator import Propagator
 from basictracer.context import SpanContext
@@ -17,11 +18,13 @@ def from_hex_string(s):
 
 
 class HTTPPropagator(Propagator):
+    log = logging.getLogger('fan.HTTPPropagator')
     mapping = {
+        # name: (key_name, dump, extract)
         'span_id': ('ot-span-id', hex_string, from_hex_string),
         'trace_id': ('ot-trace-id', hex_string, from_hex_string),
-        # 'baggage': 'ot-baggage',
-        'sampled': ('ot-sampled', str, bool),
+        'baggage': ('ot-baggage', json.dumps, json.loads),
+        'sampled': ('ot-sampled', json.dumps, json.loads),
     }
 
     def inject(self, span_context, carrier):
@@ -39,7 +42,7 @@ class HTTPPropagator(Propagator):
                 name, _, extract = v
                 kwargs[k] = extract(carrier[name])
             return SpanContext(**kwargs)
-        except:
+        except Exception:
             pass
 
 
@@ -47,19 +50,22 @@ class DjangoPropagator(HTTPPropagator):
     mapping = {
         'span_id': ('HTTP_OT_SPAN_ID', hex_string, from_hex_string),
         'trace_id': ('HTTP_OT_TRACE_ID', hex_string, from_hex_string),
+        'baggage': ('HTTP_OT_BAGGAGE', json.dumps, json.loads),
         # 'baggage': 'ot-baggage',
-        'sampled': ('HTTP_OT_SAMPLED', str, bool),
+        'sampled': ('HTTP_OT_SAMPLED', json.dumps, json.loads),
     }
 
     def extract(self, carrier):
+        self.log.debug('Run extract: {}'.format(carrier))
         try:
             kwargs = {'baggage': {}}
             for k, v in self.mapping.items():
                 name, _, extract = v
                 key = name if name in carrier else 'HTTP_{}'.format(name)
+                # crash when no HTTP_OT_SPAN_ID => return None
                 kwargs[k] = extract(carrier[key])
             return SpanContext(**kwargs)
-        except:
+        except Exception:
             pass
 
 

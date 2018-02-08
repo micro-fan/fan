@@ -3,7 +3,7 @@ from fan.service import Service
 
 
 class Context:
-    def __init__(self, discovery, service=None, parent=None, name=None):
+    def __init__(self, discovery, service=None, parent=None, name=None, baggage={}):
         self.discovery = discovery
         if service:
             assert isinstance(service, Service), service
@@ -16,6 +16,9 @@ class Context:
             parent_context = parent
         self.span = discovery.tracer.start_span(child_of=parent_context,
                                                 operation_name=name)
+        if baggage:
+            for k, v in baggage.items():
+                self.span.set_baggage_item(k, v)
         self._entered = False
 
     def create_child_context(self, name=None):
