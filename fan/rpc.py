@@ -31,7 +31,7 @@ class Caller:
                 method_name = self.call_path[-1]
                 return endpoint.perform_call(ctx, method_name, *args, **kwargs)
         else:
-            raise RPCException('No such enpoint')
+            raise RPCException('No such endpoint')
 
 
 class RPC:
