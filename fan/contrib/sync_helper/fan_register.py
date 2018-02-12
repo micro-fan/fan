@@ -48,11 +48,12 @@ def main():
     args = sys.argv[1:]
     assert len(args) == 1, 'Give yaml config name'
     zk_config = os.environ.get('ZK_HOST')
+    zk_chroot = os.environ.get('ZK_CHROOT', '/')
     setup_local_ip()
     conf = traverse(yaml.load(open(args[0])))
     print('Call with conf: {}'.format(conf))
     loop = asyncio.get_event_loop()
-    h = SyncHelper(zk_config, '/', conf)
+    h = SyncHelper(zk_config, zk_chroot, conf)
     loop.create_task(h.on_start())
     print('run loop')
     loop.run_forever()

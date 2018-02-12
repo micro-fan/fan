@@ -18,13 +18,17 @@ class KazooWrapper:
     """
     log = logging.getLogger('KazooWrapper')
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, chroot=None, *args, **kwargs):
         self.zk = KazooClient(*args, **kwargs)
         self._started = False
+        self.chroot = chroot
 
     def start(self):
         self.log.debug('Connect')
         self.zk.start()
+        if self.chroot:
+            self.zk.ensure_path(self.chroot)
+            self.zk.chroot = self.chroot
         self._started = True
 
     def stop(self):
@@ -41,9 +45,9 @@ class KazooDiscovery(RemoteDiscovery):
     log = logging.getLogger('KazooDiscovery')
     timeout = 5
 
-    def __init__(self, zk_path, chroot=None):
+    def __init__(self, zk_path, chroot='/'):
         super().__init__()
-        self.zk = KazooWrapper(hosts=zk_path, timeout=self.timeout)
+        self.zk = KazooWrapper(chroot=chroot, hosts=zk_path, timeout=self.timeout)
 
     def on_start(self):
         self.zk.start(timeout=self.timeout)

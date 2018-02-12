@@ -139,8 +139,7 @@ def cache_discovery(fun):
 
 @cache_discovery
 def get_discovery(is_django=False, name=None):
-    # TODO: get root
-    discovery = KazooDiscovery(os.environ.get('ZK_HOST', 'zk'))
+    discovery = KazooDiscovery(os.environ.get('ZK_HOST', 'zk'), os.environ.get('ZK_CHROOT', '/'))
     discovery.transport_classes = {
         'http': HTTPTransport,
     }
