@@ -99,14 +99,6 @@ class FanRecorder(InMemoryRecorder):
         }
 
         self.log_span(**params)
-
-        with open('/tmp/trace_{}'.format(time.time()*1000000), 'w') as f:
-            ctx_row = {'trace_id': ctx.trace_id,
-                       'span_id': ctx.span_id,
-                       'sampled': ctx.sampled,
-                       'parent_id': span.parent_id}
-            json.dump(ctx_row, f)
-
         return super().record_span(span)
 
 
