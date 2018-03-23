@@ -37,6 +37,7 @@ class FanMiddleware(object):
         We're performing initialization when request.ctx is called
         So set property here
         '''
+        VARS.clear()
         if hasattr(request, 'ctx'):
             return self.get_response(request)
         discovery = get_discovery(is_django=True, name=getattr(settings, 'FAN_SERVICE', None))
