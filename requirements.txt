@@ -8,4 +8,4 @@ kazoo==2.4.0
 py_zipkin==0.10.1
 
 aiozk==0.5.3
-tipsi_tools==1.5.0
+tipsi_tools==1.29.0
