@@ -1,8 +1,9 @@
 import json
 import logging
 import re
+import time
 
-from kazoo.client import KazooClient
+from kazoo.client import KazooClient, KazooState
 
 from fan.discovery import RemoteDiscovery
 from fan.remote import ProxyEndpoint
@@ -19,21 +20,34 @@ class KazooWrapper:
     log = logging.getLogger('KazooWrapper')
 
     def __init__(self, chroot=None, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
         self.zk = KazooClient(*args, **kwargs)
         self._started = False
+        self._stopped = False
         self.chroot = chroot
 
     def start(self):
         self.log.debug('Connect')
         self.zk.start()
+        self.zk.add_listener(self.state_listener)
         if self.chroot:
             self.zk.ensure_path(self.chroot)
             self.zk.chroot = self.chroot
         self._started = True
 
+    def state_listener(self, state):
+        if state == KazooState.LOST and not self._stopped:
+            self.log.info('Handle LOST state. Create new client')
+            time.sleep(1)
+            self.zk.remove_listener(self.state_listener)
+            self.zk = KazooClient(*self.args, **self.kwargs)
+            self.start()
+
     def stop(self):
         if self._started:
             self.zk.stop()
+            self._stopped = True
 
     def __getattr__(self, name):
         if not self._started:
