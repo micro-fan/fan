@@ -18,7 +18,7 @@ class Caller:
         >>> author.list()
         >>> author.delete(id=1)
         '''
-        return Caller(self.parent_context, name, self.call_path)
+        return self.__class__(self.parent_context, name, self.call_path)
 
     def __call__(self, *args, **kwargs):
         self.log.debug('Generate call: {} {} {}'.format(self.call_path, args, kwargs))
@@ -34,9 +34,26 @@ class Caller:
             raise RPCException('No such endpoint')
 
 
+class AsyncCaller(Caller):
+    async def __call__(self, *args, **kwargs):
+        self.log.debug('Generate call: {} {} {}'.format(self.call_path, args, kwargs))
+        endpoint = await self.parent_context.discovery.find_endpoint(
+            tuple(self.call_path[:-1]), version_filter=None
+        )
+        self.log.debug('RPCEndpoint: {}'.format(endpoint))
+        if endpoint:
+            name = '.'.join(self.call_path)
+            async with self.parent_context.create_child_context(name=name) as ctx:
+                method_name = self.call_path[-1]
+                return await endpoint.perform_call(ctx, method_name, *args, **kwargs)
+        else:
+            raise RPCException('No such endpoint')
+
+
 class RPC:
-    def __init__(self, context):
+    def __init__(self, context, async=False):
         self.context = context
+        self.async = async
 
     def __getattr__(self, name):
-        return Caller(self.context, name)
+        return (AsyncCaller if self.async else Caller)(self.context, name)

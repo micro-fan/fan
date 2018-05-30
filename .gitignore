@@ -6,3 +6,6 @@
 .projectile
 .idea/*
 /v2/
+build/
+dist/
+*.egg-info/

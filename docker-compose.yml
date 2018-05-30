@@ -20,7 +20,9 @@ services:
   fan:
     build: .
     command: bash -c "sleep 15 && pytest"
-    # command: sleep infinity
+#    command: sleep infinity
+#    volumes:
+#      - .:/code
     depends_on:
       - redis
       - rabbitmq

@@ -22,7 +22,7 @@ class Context:
         self._entered = False
 
     def create_child_context(self, name=None):
-        return Context(self.discovery, self.service, self, name)
+        return self.__class__(self.discovery, self.service, self, name)
 
     @property
     def rpc(self):
@@ -52,3 +52,34 @@ class Context:
         if exc_type:
             self.span.set_tag('error', '{} {}'.format(exc_type, exc_val))
         self.post_call()
+
+
+class AsyncContext(Context):
+    @property
+    def rpc(self):
+        """
+        if you generate totally new context, you must enter it before use:
+        >>> async with new_ctx:
+               # now you may call new_ctx.rpc
+               await new_ctx.rpc.some_endpoint.ping()
+        for most services it would be started when accepting incoming request in RemoteEndpoint,
+        so you should not do that in services
+        """
+        assert self._entered, 'You must enter context before call .rpc'
+        return RPC(self, async=True)
+
+    async def pre_call(self):
+        pass
+
+    async def post_call(self):
+        self.span.finish()
+
+    async def __aenter__(self, *args):
+        self._entered = True
+        await self.pre_call()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            self.span.set_tag('error', '{} {}'.format(exc_type, exc_val))
+        await self.post_call()

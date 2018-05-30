@@ -1,12 +1,14 @@
-import logging
-import requests
+import io
 import json
+import logging
 
-from basictracer.propagator import Propagator
+import aiohttp
+import requests
 from basictracer.context import SpanContext
+from basictracer.propagator import Propagator
 
-from fan.remote import Transport
 from fan.exceptions import RPCHttpError
+from fan.remote import Transport
 
 
 def hex_string(i):
@@ -94,19 +96,43 @@ class HTTPTransport(Transport):
                 out[k] = v
         return out
 
-    def rpc_call(self, method_name, ctx, **kwargs):
+    def _prepare_multipart_request(self, form_data):
+        # `requests` library send multi-part data if call contains key `files`
+        data = {}
+        files = {}
+        for key, value in form_data.items():
+            if isinstance(value, io.IOBase):
+                files[key] = value
+            else:
+                data[key] = value
+        result = {
+            'data': data,
+        }
+        if files:
+            result['files'] = files
+
+        return result
+
+    def _rpc_call_prepare(self, kwargs, method_name):
         assert method_name in self.methods, 'Cannot find endpoint'
         method = self.methods[method_name]
         url = ''.join([self.base_url, method['url']])
         if '{' in url:
             url = url.format(**kwargs)
         m = method.get('method', 'get').lower()
-        req = getattr(requests, m)
-
         if m in ('get', 'delete'):
             kw = {'params': self.prepare_get_params(kwargs)}
         else:
-            kw = {'json': kwargs}
+            if 'multipart' in method.get('content_type'):
+                kw = self._prepare_multipart_request(kwargs)
+            else:
+                kw = {'json': kwargs}
+        return kw, m, url
+
+    def rpc_call(self, method_name, ctx, **kwargs):
+        kw, m, url = self._rpc_call_prepare(kwargs, method_name)
+
+        req = getattr(requests, m)
         self.log.debug('Url: {} Params: {} Func: {}'.format(url, kw, req))
         kw['headers'] = self.get_headers(ctx)
         resp = req(url, **kw)
@@ -119,3 +145,34 @@ class HTTPTransport(Transport):
             self.log.error('Resp: {} : {}'.format(resp.status_code, resp))
             raise RPCHttpError(resp)
         return ret
+
+
+class AsyncHTTPTransport(HTTPTransport):
+    log = logging.getLogger('AsyncHTTPTransport')
+
+    def _prepare_multipart_request(self, data):
+        return {'data': data}
+
+    async def on_start(self):
+        super().on_start()
+
+    async def on_stop(self):
+        super().on_stop()
+
+    async def rpc_call(self, method_name, ctx, **kwargs):
+        kw, m, url = self._rpc_call_prepare(kwargs, method_name)
+
+        async with aiohttp.ClientSession() as session:
+            req = getattr(session, m)
+            self.log.debug('Url: {} Params: {} Func: {}'.format(url, kw, req))
+            kw['headers'] = self.get_headers(ctx)
+            async with req(url, **kw) as resp:
+                if resp.status in (200, 201):
+                    ret = await resp.json()
+                elif resp.status in (204, ):
+                    ret = True
+                else:
+                    # TODO: howto return error
+                    self.log.error('Resp: {} : {}'.format(resp.status_code, resp))
+                    raise RPCHttpError(resp)
+                return ret

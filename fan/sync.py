@@ -1,26 +1,22 @@
 '''
 Shortlived sync helpers. Primary target is creating short-lived fast context with get_context
 '''
-from functools import wraps
-import json
 import logging
 import os
 import socket
-import time
+from functools import wraps
 
 import requests
 from basictracer import BasicTracer
 from basictracer.recorder import InMemoryRecorder
-from py_zipkin.zipkin import ZipkinAttrs
 from py_zipkin.thrift import (annotation_list_builder, create_endpoint,
                               binary_annotation_list_builder,
                               create_span, thrift_objs_in_bytes)
+from py_zipkin.zipkin import ZipkinAttrs
 
 from fan.context import Context
 from fan.contrib.kazoo.discovery import KazooDiscovery
-from fan.exceptions import DiscoveryConnectionError
 from fan.transport import HTTPTransport, HTTPPropagator, DjangoPropagator
-
 
 discovery = None
 tracer = None
@@ -76,7 +72,7 @@ class FanRecorder(InMemoryRecorder):
 
         ctx = span.context
         timing = {'ss': span.start_time,
-                  'sr': span.start_time+span.duration}
+                  'sr': span.start_time + span.duration}
         annotations = annotation_list_builder(timing, EP)
         attrs = ZipkinAttrs(trace_id=hex(ctx.trace_id)[2:],
                             span_id=hex(ctx.span_id)[2:],
