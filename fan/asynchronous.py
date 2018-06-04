@@ -11,6 +11,9 @@ from fan.sync import get_tracer
 from fan.transport import AsyncHTTPTransport, HTTPPropagator, DjangoPropagator
 
 
+discovery = None
+
+
 def cache_discovery(fun):
     @wraps(fun)
     async def wrapped(*args, **kwargs):

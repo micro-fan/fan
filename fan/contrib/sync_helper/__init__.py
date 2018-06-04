@@ -1,9 +1,11 @@
 import logging
+import os
 from copy import copy
+
 from fan.contrib.aio.discovery import ZKDiscovery
 
-
 logging.basicConfig(level=logging.DEBUG)
+
 
 class SyncHelper:
     # url: viewset class
@@ -31,6 +33,7 @@ class SyncHelper:
             self.log.debug('Updated node: {} {} => {}'.format(path, data, new_data))
             self.d.unwatch(path, updated)
             await self.register_endpoint(service)
+
         return updated
 
     async def register_endpoint(self, service):
@@ -46,3 +49,44 @@ class SyncHelper:
         self.log.debug('Registered: {!r}'.format(zk_path))
         self.d.watch(zk_path, self.gen_callback(zk_path, data, service_original))
         return zk_path, data
+
+
+class SanicRegister:
+    log = logging.getLogger('EndpointRegister')
+
+    def get_local_ip(self):
+        if not os.path.exists('/.dockerenv'):
+            return '127.0.0.1'
+        with open('/etc/hosts') as f:
+            lines = f.readlines()
+        return lines[-1].strip().split()[0]
+
+    def __init__(self, name, port, transport='http', version='1.0.0'):
+        self.zk_config = os.environ.get('ZK_HOST')
+        self.zk_chroot = os.environ.get('ZK_CHROOT', '/')
+        self.service = {
+            'methods': [],
+            'name': name,
+            'host': self.get_local_ip(),
+            'port': port,
+            'transport': transport,
+            'version': version,
+        }
+        self.methods = []
+
+    def add(self, name, url, method='GET', content_type='application/json'):
+        self.service['methods'].append({
+            'name': name,
+            'method': method,
+            'url': url,
+            'content_type': content_type,
+        })
+
+    async def register(self, app):
+        conf = {
+            'services': [self.service]
+        }
+        h = SyncHelper(self.zk_config, self.zk_chroot, conf)
+        self.loop = app.loop
+        self.task = self.loop.create_task(h.on_start())
+        return self

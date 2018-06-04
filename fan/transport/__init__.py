@@ -7,7 +7,7 @@ import requests
 from basictracer.context import SpanContext
 from basictracer.propagator import Propagator
 
-from fan.exceptions import RPCHttpError
+from fan.exceptions import RPCHttpError, AioRPCHttpError
 from fan.remote import Transport
 
 
@@ -123,7 +123,7 @@ class HTTPTransport(Transport):
         if m in ('get', 'delete'):
             kw = {'params': self.prepare_get_params(kwargs)}
         else:
-            if 'multipart' in method.get('content_type'):
+            if 'multipart' in method.get('content_type', 'json'):
                 kw = self._prepare_multipart_request(kwargs)
             else:
                 kw = {'json': kwargs}
@@ -173,6 +173,6 @@ class AsyncHTTPTransport(HTTPTransport):
                     ret = True
                 else:
                     # TODO: howto return error
-                    self.log.error('Resp: {} : {}'.format(resp.status_code, resp))
-                    raise RPCHttpError(resp)
+                    self.log.error('Resp: {} : {}'.format(resp.status, resp))
+                    raise AioRPCHttpError(resp.status, await resp.read())
                 return ret
