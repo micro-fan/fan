@@ -14,7 +14,7 @@ class DummyDiscovery(SimpleDictDiscovery):
     pass
 
 
-class TestLocalDiscovery(LocalDiscovery):
+class FanTestLocalDiscovery(LocalDiscovery):
     transports = {'dummy': DummyTransport}
 
     def get_transport_class(self, name):
@@ -36,7 +36,7 @@ class DummyRemoteEndpoint(RemoteEndpoint):
 class TransportCase(TestCase):
     def setUp(self):
         self.dict_discovery = DummyDiscovery({})
-        self.discovery = CompositeDiscovery(TestLocalDiscovery(), self.dict_discovery)
+        self.discovery = CompositeDiscovery(FanTestLocalDiscovery(), self.dict_discovery)
         self.svc = DummyService()
         self.svc.on_start()
 

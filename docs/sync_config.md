@@ -1,6 +1,6 @@
-# Syncronous services helper
+# Synchronous services helper
 
-Main goal for this helper is providing integration with discovery service for syncronous services. You cannot keep connections with zookeeper without heartbeats, so you need separate thread or process. Since wsgi services are can be terminated/restarted at any moment better choice is keep this functionality in separate process.
+Main goal for this helper is providing integration with discovery service for synchronous services. You cannot keep connections with zookeeper without heartbeats, so you need separate thread or process. Since wsgi services are can be terminated/restarted at any moment better choice is keep this functionality in separate process.
 
 Ideally this helper should:
 

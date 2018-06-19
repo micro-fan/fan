@@ -37,7 +37,7 @@ class BrokenWorker(Worker):
         raise BrokenWorkerError
 
 
-class TestSupervisor(Supervisor):
+class FanTestSupervisor(Supervisor):
 
     def __init__(self):
         self.specs = [Spec(Worker)]
@@ -54,7 +54,7 @@ class LifecycleTest(TestCase):
     def s(self):
         if hasattr(self, '_s'):
             return self._s
-        self._s = TestSupervisor()
+        self._s = FanTestSupervisor()
         self._s.lifecycle.on_start()
         return self._s
 

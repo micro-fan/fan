@@ -40,7 +40,7 @@ class BrokenWorker(Worker):
         raise BrokenWorkerError
 
 
-class TestSupervisor(AIOSupervisor):
+class FanTestSupervisor(AIOSupervisor):
 
     def __init__(self):
         self.specs = [AIOSpec(Worker)]
@@ -56,7 +56,7 @@ class AIOLifecycleTest(AIOTestCase):
     async def get_sup(self):
         if hasattr(self, '_s'):
             return self._s
-        self._s = TestSupervisor()
+        self._s = FanTestSupervisor()
         await self._s.lifecycle.on_start()
         return self._s
 

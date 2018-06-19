@@ -11,7 +11,7 @@ from fan.remote import LocalEndpoint, RemoteEndpoint
 from fan.tests import DummyTracer, DummyTransport
 
 
-class TestServiceGroup(ServiceGroup):
+class FanTestServiceGroup(ServiceGroup):
     def __init__(self, discovery):
         super().__init__(discovery)
         self.endpoints = []
@@ -29,7 +29,7 @@ class TestServiceGroup(ServiceGroup):
                 self.discovery.register(ep)
 
 
-class DummyServiceGroup(TestServiceGroup):
+class DummyServiceGroup(FanTestServiceGroup):
     services = [{'service': DummyTracer,
                  'endpoints': [{'endpoint': RemoteEndpoint,
                                 'params': {'id': 1, 'transport': 'dummy'}}]}]
@@ -43,18 +43,18 @@ class ChainedEchoService(Service):
         return ctx.rpc.dummy_tracer.echo(word, 0)[0]
 
 
-class ChainedServiceGroup(TestServiceGroup):
+class ChainedServiceGroup(FanTestServiceGroup):
     services = [{'service': ChainedEchoService,
                  'endpoints': [{'endpoint': RemoteEndpoint,
                                 'params': {'id': 2, 'transport': 'dummy'}}]}]
 
 
-class TestProcess(Process):
+class FanTestProcess(Process):
     def create_context(self):
         return Context(self.discovery)
 
 
-class TestRemoteDiscovery(SimpleDictDiscovery):
+class FanTestRemoteDiscovery(SimpleDictDiscovery):
     def __init__(self, conf):
         super().__init__(conf)
         self.conf = conf
@@ -75,7 +75,7 @@ class TestRemoteDiscovery(SimpleDictDiscovery):
         pass
 
 
-class TestLocalDiscovery(LocalDiscovery):
+class FanTestLocalDiscovery(LocalDiscovery):
     transports = {'dummy': DummyTransport}
 
     def get_transport_class(self, name):
@@ -88,7 +88,7 @@ class ProcessTestCase(TestCase):
         d = CompositeDiscovery(LocalDiscovery(), SimpleDictDiscovery({}))
         d.tracer = BasicTracer(self.recorder)
 
-        self.process = TestProcess(d)
+        self.process = FanTestProcess(d)
 
     def test_call(self):
         context = self.process.create_context()
@@ -105,7 +105,7 @@ class MultiProcessTestCase(TestCase):
     def setUp(self):
         self.recorder = InMemoryRecorder()
 
-        self.remote = TestRemoteDiscovery({})
+        self.remote = FanTestRemoteDiscovery({})
 
         self.p1 = self.create_process(self.recorder, ChainedServiceGroup)
         self.p2 = self.create_process(self.recorder, DummyServiceGroup)
@@ -113,9 +113,9 @@ class MultiProcessTestCase(TestCase):
         self.p2.start()
 
     def create_process(self, recorder, sg):
-        discovery = CompositeDiscovery(TestLocalDiscovery(), self.remote)
+        discovery = CompositeDiscovery(FanTestLocalDiscovery(), self.remote)
         discovery.tracer = BasicTracer(recorder)
-        proc = TestProcess(discovery)
+        proc = FanTestProcess(discovery)
         proc.service_groups = [sg]
         return proc
 

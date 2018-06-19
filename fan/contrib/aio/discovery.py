@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 
@@ -16,6 +15,8 @@ class ZKDiscovery(RemoteDiscovery):
         super().__init__()
         self.chroot = chroot
         self.with_data_watcher = with_data_watcher
+        self.closing = False
+        self.check_zk_task = None
         self.zk = ZKClient(zk_path, chroot)
 
     async def create(self, path, **kwargs):
@@ -42,20 +43,9 @@ class ZKDiscovery(RemoteDiscovery):
         await self.zk.start()
         if not await self.zk.exists('/endpoints'):
             await self.zk.create('/endpoints')
-        asyncio.ensure_future(self._check_zk())
         if self.with_data_watcher:
             self.data_watcher = self.zk.recipes.DataWatcher()
             self.data_watcher.set_client(self.zk)
-
-    async def _check_zk(self):
-        try:
-            while True:
-                await self.zk.session.ensure_safe_state()
-                self.log.debug('ZK session is ok. looping...')
-                await asyncio.sleep(5)
-        except Exception as e:
-            self.log.exception('Session closed')
-            asyncio.get_event_loop().stop()
 
     async def register(self, endpoint) -> tuple:
         name = endpoint.name
@@ -101,10 +91,19 @@ class ZKDiscovery(RemoteDiscovery):
 
     def watch(self, path, callback):
         self.data_watcher.add_callback(path, callback)
-        pass
 
     def unwatch(self, path, callback):
         self.data_watcher.remove_callback(path, callback)
+
+    def remove_all_wathers(self):
+        for path, callbacks in list(self.data_watcher.callbacks.items()):
+            for callback in list(callbacks):
+                self.data_watcher.remove_callback(path, callback)
+
+    async def stop(self):
+        self.closing = True
+        self.remove_all_wathers()
+        await self.zk.session.close()
 
 
 class AIOCompositeDiscovery(CompositeDiscovery):

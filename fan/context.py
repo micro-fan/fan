@@ -83,3 +83,6 @@ class AsyncContext(Context):
         if exc_type:
             self.span.set_tag('error', '{} {}'.format(exc_type, exc_val))
         await self.post_call()
+
+    async def stop(self):
+        await self.discovery.zk.session.close()
