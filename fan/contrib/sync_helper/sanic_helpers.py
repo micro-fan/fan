@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+from typing import Type
 
 from sanic import Sanic
 
@@ -54,45 +55,6 @@ class SanicRegister:
         await self.sync_helper.on_stop()
 
 
-class SanicServiceHelper:
-    def __init__(self, name, host, port):
-        self._host = host
-        self._port = port
-        self.sanic_server = None
-        self.app = Sanic(name)
-        self.fan_reg = SanicRegister(name, port=self._port)
-        self.coroutines = []
-        self.workers = []
-
-    def add_endpoint(self, handler, name, url, method):  # TODO: url arguments
-        self.app.add_route(handler, url, methods=[method])
-        self.fan_reg.add(name=name, url=url, method=method)
-
-    def add_task(self, coroutine):
-        self.coroutines.append(coroutine)
-
-    def run(self, **kwargs):  # TODO: Do we really need this
-        for coroutine in self.coroutines:
-            self.app.add_task(coroutine(app=self.app))
-        self.app.add_task(self.fan_reg.register(self.app))
-        self.app.run(host=self._host, port=self._port, **kwargs)
-
-    async def async_run(self, loop=None, **kwargs):
-        loop = loop or asyncio.get_event_loop()
-        for coroutine in self.coroutines:
-            self.workers.append(coroutine(loop=loop))
-        server = self.app.create_server(host=self._host, port=self._port, **kwargs)
-        self.sanic_server = asyncio.ensure_future(server, loop=loop)
-        await self.fan_reg.register(loop=loop)
-
-    async def stop(self):
-        await self.fan_reg.stop()
-        if not self.sanic_server.done():
-            self.sanic_server.cancel()
-        for worker in self.workers:
-            worker.stop()
-
-
 class AbstractTaskWorker:
     def __init__(self, loop):
         self.idle_timeout = 1
@@ -114,3 +76,46 @@ class AbstractTaskWorker:
         assert app or loop, 'Either app nor loop must be defined'
         return cls(app.loop if app else loop)
 
+    @classmethod
+    async def deferred_task(cls, app):
+        # This method is used with sanic_app.add_task to retrieve loop after app started.
+        return cls(app.loop)
+
+
+class SanicServiceHelper:
+    def __init__(self, name, host, port):
+        self._host = host
+        self._port = port
+        self.sanic_server = None
+        self.app = Sanic(name)
+        self.fan_reg = SanicRegister(name, port=self._port)
+        self.task_classes = []
+        self.workers = []
+
+    def add_endpoint(self, handler, name, url, method):  # TODO: url arguments
+        self.app.add_route(handler, url, methods=[method])
+        self.fan_reg.add(name=name, url=url, method=method)
+
+    def add_task(self, task_class: Type[AbstractTaskWorker]):
+        self.task_classes.append(task_class)
+
+    def run(self, **kwargs):  # TODO: Do we really need this
+        for task_class in self.task_classes:
+            self.app.add_task(task_class.deferred_task(app=self.app))
+        self.app.add_task(self.fan_reg.register(self.app))
+        self.app.run(host=self._host, port=self._port, **kwargs)
+
+    async def async_run(self, loop=None, **kwargs):
+        loop = loop or asyncio.get_event_loop()
+        for task_class in self.task_classes:
+            self.workers.append(task_class.task(loop=loop))
+        server = self.app.create_server(host=self._host, port=self._port, **kwargs)
+        self.sanic_server = asyncio.ensure_future(server, loop=loop)
+        await self.fan_reg.register(loop=loop)
+
+    async def stop(self):
+        await self.fan_reg.stop()
+        if not self.sanic_server.done():
+            self.sanic_server.cancel()
+        for worker in self.workers:
+            worker.stop()

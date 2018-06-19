@@ -50,7 +50,7 @@ def fan_test_service(fan_test_service_port, global_status):
     service = SanicServiceHelper('test_service', host='0.0.0.0', port=fan_test_service_port)
     service.add_endpoint(ping, name='ping', url='/ping/', method='GET')
     service.add_endpoint(status, name='status', url='/status/', method='GET')
-    service.add_task(FunTestTask.task)
+    service.add_task(FunTestTask)
     yield service
 
 
