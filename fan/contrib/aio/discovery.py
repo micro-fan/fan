@@ -11,13 +11,14 @@ from fan.contrib.aio.remote import AIOProxyEndpoint
 class ZKDiscovery(RemoteDiscovery):
     log = logging.getLogger('fan.aio.ZKDiscovery')
 
-    def __init__(self, zk_path, chroot='/', with_data_watcher=True):
+    def __init__(self, zk_path, chroot='/', with_data_watcher=True, loop=None):
         super().__init__()
         self.chroot = chroot
         self.with_data_watcher = with_data_watcher
         self.closing = False
+        self.loop = loop
         self.check_zk_task = None
-        self.zk = ZKClient(zk_path, chroot)
+        self.zk = ZKClient(zk_path, chroot, loop=loop)
 
     async def create(self, path, **kwargs):
         try:

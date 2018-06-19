@@ -63,7 +63,7 @@ async def running_service(event_loop, fan_test_service):
 
 @pytest.fixture
 async def fan_async_context(event_loop):
-    async with await get_context() as ctx:
+    async with await get_context(loop=event_loop) as ctx:
         yield ctx
         await ctx.stop()
 
@@ -82,9 +82,5 @@ async def test_server_is_running(running_service, fan_test_service_url):
 
 @pytest.mark.asyncio
 async def test_rpc_async_call(event_loop, running_service, fan_test_service_url, fan_async_context):
-    async def run_cmd():
-        resp = await fan_async_context.rpc.test_service.status()
-        assert resp.get('status'), 'Api status: task is not running'
-
-    loop = event_loop
-    await loop.create_task(run_cmd())
+    resp = await fan_async_context.rpc.test_service.status()
+    assert resp.get('status'), 'Api status: task is not running'

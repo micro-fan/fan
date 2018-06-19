@@ -26,11 +26,12 @@ def cache_discovery(fun):
 
 
 @cache_discovery
-async def get_discovery(is_django=False, name=None):
+async def get_discovery(is_django=False, name=None, loop=None):
     discovery = LazyAiozkDiscovery(
         os.environ.get('ZK_HOST', 'zk'),
         os.environ.get('ZK_CHROOT', '/'),
-        with_data_watcher=False
+        with_data_watcher=False,
+        loop=loop
     )
     discovery.transport_classes = {
         'http': AsyncHTTPTransport,
@@ -47,8 +48,8 @@ async def get_discovery(is_django=False, name=None):
     return discovery
 
 
-async def get_context(name=None, service_name=None):
+async def get_context(name=None, service_name=None, loop=None):
     if not service_name and name:
         service_name = name
-    discovery = await get_discovery(is_django=False, name=service_name)
+    discovery = await get_discovery(is_django=False, name=service_name, loop=loop)
     return AsyncContext(discovery, name=name)
