@@ -7,32 +7,26 @@ from sanic import response
 from fan.asynchronous import get_context
 from fan.contrib.sync_helper.sanic_helpers import AbstractTaskWorker, SanicServiceHelper
 
-# Global state
-is_test_task_running = False
-
-
-async def status(request):
-    return response.json({'status': is_test_task_running})
-
 
 async def ping(request):
     return response.json(['pong'])
 
 
-class FunTestTask(AbstractTaskWorker):
-    async def worker_loop(self):
-        global is_test_task_running
-        while not self.stopping:
-            is_test_task_running = True
-            await asyncio.sleep(self.idle_timeout)
+@pytest.fixture
+def ft_task_is_running():
+    yield asyncio.Future()
 
 
 @pytest.fixture
-def global_status():
-    global is_test_task_running
-    is_test_task_running = False
-    yield
-    is_test_task_running = False
+def fun_test_task(ft_task_is_running):
+    class FunTestTask(AbstractTaskWorker):
+        async def worker_loop(self):
+            while not self.stopping:
+                await asyncio.sleep(0.1)
+                ft_task_is_running.set_result(True)
+                await asyncio.sleep(self.idle_timeout)
+
+    return FunTestTask
 
 
 @pytest.fixture
@@ -46,11 +40,10 @@ def fan_test_service_url(fan_test_service_port):
 
 
 @pytest.fixture
-def fan_test_service(fan_test_service_port, global_status):
+def fan_test_service(fan_test_service_port, fun_test_task):
     service = SanicServiceHelper('test_service', host='0.0.0.0', port=fan_test_service_port)
     service.add_endpoint(ping, name='ping', url='/ping/', method='GET')
-    service.add_endpoint(status, name='status', url='/status/', method='GET')
-    service.add_task(FunTestTask)
+    service.add_task(fun_test_task)
     yield service
 
 
@@ -69,25 +62,29 @@ async def fan_async_context(event_loop):
 
 
 @pytest.mark.asyncio
-async def test_server_is_running(running_service, fan_test_service_url):
-    global is_test_task_running
-    assert is_test_task_running, 'Task is not running'
+async def test_server_is_running(running_service, fan_test_service_url, ft_task_is_running):
+    await asyncio.wait_for(ft_task_is_running, timeout=1)
+    assert ft_task_is_running.result(), 'Task is not running'
 
-    conn = aiohttp.TCPConnector(verify_ssl=False)
+
+@pytest.mark.asyncio
+async def test_server_http_ok(running_service, fan_test_service_url, ft_task_is_running):
+    conn = aiohttp.TCPConnector()
     async with aiohttp.ClientSession(connector=conn) as session:
-        async with session.get(f'{fan_test_service_url}/status/') as response:
+        async with session.get(f'{fan_test_service_url}/ping/') as response:
             response_data = await response.json()
-            assert response_data.get('status'), 'Api status: task is not running'
+            assert 'pong' in response_data, response_data
 
 
 @pytest.mark.asyncio
 async def test_rpc_async_call(event_loop, running_service, fan_test_service_url, fan_async_context):
-    resp = await fan_async_context.rpc.test_service.status()
-    assert resp.get('status'), 'Api status: task is not running'
+    resp = await fan_async_context.rpc.test_service.ping()
+    assert 'pong' in resp, resp
 
 
 @pytest.mark.asyncio
 async def test_call_async_ctx_second_type(event_loop, running_service, fan_test_service_url,
                                           fan_async_context):
-    resp = await fan_async_context.rpc.test_service.status()
-    assert resp.get('status'), 'Api status: task is not running'
+    # Test that different event_loop is cached in cache discovery
+    resp = await fan_async_context.rpc.test_service.ping()
+    assert 'pong' in resp, resp
