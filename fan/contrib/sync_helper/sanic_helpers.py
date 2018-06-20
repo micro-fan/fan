@@ -92,9 +92,9 @@ class SanicServiceHelper:
         self.task_classes = []
         self.workers = []
 
-    def add_endpoint(self, handler, name, url, method):  # TODO: url arguments
+    def add_endpoint(self, handler, name, url, method, **kwargs):  # TODO: url arguments
         self.app.add_route(handler, url, methods=[method])
-        self.fan_reg.add(name=name, url=url, method=method)
+        self.fan_reg.add(name=name, url=url, method=method, **kwargs)
 
     def add_task(self, task_class: Type[AbstractTaskWorker]):
         self.task_classes.append(task_class)
