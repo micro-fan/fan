@@ -84,3 +84,10 @@ async def test_server_is_running(running_service, fan_test_service_url):
 async def test_rpc_async_call(event_loop, running_service, fan_test_service_url, fan_async_context):
     resp = await fan_async_context.rpc.test_service.status()
     assert resp.get('status'), 'Api status: task is not running'
+
+
+@pytest.mark.asyncio
+async def test_call_async_ctx_second_type(event_loop, running_service, fan_test_service_url,
+                                          fan_async_context):
+    resp = await fan_async_context.rpc.test_service.status()
+    assert resp.get('status'), 'Api status: task is not running'

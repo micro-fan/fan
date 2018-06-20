@@ -3,7 +3,7 @@ Shortlived async helpers. Primary target is creating short-lived fast context wi
 """
 
 import os
-from functools import wraps
+from functools import lru_cache
 
 from fan.context import AsyncContext
 from fan.contrib.aio.discovery import LazyAiozkDiscovery
@@ -11,21 +11,7 @@ from fan.sync import get_tracer
 from fan.transport import AsyncHTTPTransport, HTTPPropagator, DjangoPropagator
 
 
-discovery = None
-
-
-def cache_discovery(fun):
-    @wraps(fun)
-    async def wrapped(*args, **kwargs):
-        global discovery
-        if discovery:
-            return discovery
-        discovery = await fun(*args, **kwargs)
-        return discovery
-    return wrapped
-
-
-@cache_discovery
+@lru_cache(maxsize=None)
 async def get_discovery(is_django=False, name=None, loop=None):
     discovery = LazyAiozkDiscovery(
         os.environ.get('ZK_HOST', 'zk'),
