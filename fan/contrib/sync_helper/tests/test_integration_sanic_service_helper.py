@@ -77,6 +77,15 @@ async def test_server_http_ok(running_service, fan_test_service_url, ft_task_is_
 
 
 @pytest.mark.asyncio
+async def test_get_async_context_two_times(event_loop):
+    async with await get_context(loop=event_loop) as ctx:
+        await ctx.stop()
+
+    async with await get_context(loop=event_loop) as ctx:
+        await ctx.stop()
+
+
+@pytest.mark.asyncio
 async def test_rpc_async_call(event_loop, running_service, fan_test_service_url, fan_async_context):
     resp = await fan_async_context.rpc.test_service.ping()
     assert 'pong' in resp, resp

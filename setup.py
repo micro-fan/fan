@@ -30,7 +30,7 @@ setup(
         'requests',
         'kazoo',
         'tipsi_tools',
-        'py_zipkin',
+        'py-zipkin<0.12.0,>=0.10.1',
         'aiohttp',
         'sanic',
     ],

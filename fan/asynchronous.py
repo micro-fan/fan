@@ -3,22 +3,21 @@ Shortlived async helpers. Primary target is creating short-lived fast context wi
 """
 
 import os
-from functools import lru_cache
 
 from fan.context import AsyncContext
 from fan.contrib.aio.discovery import LazyAiozkDiscovery
 from fan.sync import get_tracer
 from fan.transport import AsyncHTTPTransport, HTTPPropagator, DjangoPropagator
+from fan.utils import async_cache
 
 
-@lru_cache(maxsize=None)
+@async_cache
 async def get_discovery(is_django=False, name=None, loop=None):
     discovery = LazyAiozkDiscovery(
         os.environ.get('ZK_HOST', 'zk'),
         os.environ.get('ZK_CHROOT', '/'),
         with_data_watcher=False,
-        loop=loop
-    )
+        loop=loop)
     discovery.transport_classes = {
         'http': AsyncHTTPTransport,
     }
