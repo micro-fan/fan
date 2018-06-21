@@ -1,5 +1,4 @@
 from setuptools import setup, find_packages
-from pip.req import parse_requirements
 
 with open('fan/__init__.py', 'r') as f:
     for line in f:
