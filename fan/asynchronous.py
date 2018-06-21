@@ -7,12 +7,12 @@ import os
 from fan.context import AsyncContext
 from fan.contrib.aio.discovery import LazyAiozkDiscovery
 from fan.sync import get_tracer
-from fan.transport import AsyncHTTPTransport, HTTPPropagator, DjangoPropagator
+from fan.transport import AsyncHTTPTransport, HTTPPropagator
 from fan.utils import async_cache
 
 
 @async_cache
-async def get_discovery(is_django=False, name=None, loop=None):
+async def get_discovery(name=None, loop=None):
     discovery = LazyAiozkDiscovery(
         os.environ.get('ZK_HOST', 'zk'),
         os.environ.get('ZK_CHROOT', '/'),
@@ -22,19 +22,13 @@ async def get_discovery(is_django=False, name=None, loop=None):
         'http': AsyncHTTPTransport,
     }
 
-    if not name and is_django:
-        name = 'django'
-
     discovery.tracer = get_tracer(name)
-    if is_django:
-        discovery.tracer.register_propagator('http', DjangoPropagator())
-    else:
-        discovery.tracer.register_propagator('http', HTTPPropagator())
+    discovery.tracer.register_propagator('http', HTTPPropagator())
     return discovery
 
 
 async def get_context(name=None, service_name=None, loop=None):
     if not service_name and name:
         service_name = name
-    discovery = await get_discovery(is_django=False, name=service_name, loop=loop)
+    discovery = await get_discovery(name=service_name, loop=loop)
     return AsyncContext(discovery, name=name)
