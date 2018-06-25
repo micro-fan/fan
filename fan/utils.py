@@ -1,7 +1,10 @@
+_split_object = object()
+
+
 def _make_key(args, kwargs):
     key = args
     if kwargs:
-        key += (object(), )
+        key += (_split_object, )  # split args kwargs with unique object
         for item in kwargs.items():
             key += item
 
