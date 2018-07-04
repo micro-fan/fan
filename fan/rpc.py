@@ -22,8 +22,9 @@ class Caller:
 
     def __call__(self, *args, **kwargs):
         self.log.debug('Generate call: {} {} {}'.format(self.call_path, args, kwargs))
-        endpoint = self.parent_context.discovery.find_endpoint(tuple(self.call_path[:-1]),
-                                                               version_filter=None)
+        endpoint = self.parent_context.discovery.find_endpoint(
+            tuple(self.call_path[:-1]), version_filter=None
+        )
         self.log.debug('RPCEndpoint: {}'.format(endpoint))
         if endpoint:
             name = '.'.join(self.call_path)
@@ -51,9 +52,9 @@ class AsyncCaller(Caller):
 
 
 class RPC:
-    def __init__(self, context, async=False):
+    def __init__(self, context, async_caller=False):
         self.context = context
-        self.async = async
+        self.async_call = async_caller
 
     def __getattr__(self, name):
-        return (AsyncCaller if self.async else Caller)(self.context, name)
+        return (AsyncCaller if self.async_call else Caller)(self.context, name)

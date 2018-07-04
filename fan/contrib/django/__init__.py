@@ -23,20 +23,20 @@ def update_vars(ctx, request):
 
 
 class FanMiddleware(object):
-    '''
+    """
     Enable tracing handling
     Adds `request.ctx`
-    '''
+    """
     log = logging.getLogger('FanMiddleware')
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        '''
+        """
         We're performing initialization when request.ctx is called
         So set property here
-        '''
+        """
         VARS.clear()
         if hasattr(request, 'ctx'):
             return self.get_response(request)

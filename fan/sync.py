@@ -10,8 +10,7 @@ import requests
 from basictracer import BasicTracer
 from basictracer.recorder import InMemoryRecorder
 from py_zipkin.thrift import (annotation_list_builder, create_endpoint,
-                              binary_annotation_list_builder,
-                              create_span, thrift_objs_in_bytes)
+                              binary_annotation_list_builder, create_span, thrift_objs_in_bytes)
 from py_zipkin.zipkin import ZipkinAttrs
 
 from fan.context import Context
@@ -40,46 +39,48 @@ EP = None
 log = logging.getLogger('fan.sync')
 
 
-def logger_log_span(span_id, parent_span_id, trace_id, span_name, annotations,
-                    binary_annotations, **kwargs):
+# TODO: [TRACING] Logging refactoring
+def logger_log_span(span_id, parent_span_id, trace_id, span_name, annotations, binary_annotations,
+                    **kwargs):
     log.info('Log span: {}'.format(locals()))
 
 
-def zipkin_log_span(span_id, parent_span_id, trace_id, span_name, annotations,
-                    binary_annotations, timestamp_s, duration_s, **kwargs):
-    span = create_span(span_id, parent_span_id, trace_id, span_name,
-                       annotations, binary_annotations,
-                       timestamp_s, duration_s)
+def zipkin_log_span(span_id, parent_span_id, trace_id, span_name, annotations, binary_annotations,
+                    timestamp_s, duration_s, **kwargs):
+    span = create_span(span_id, parent_span_id, trace_id, span_name, annotations,
+                       binary_annotations, timestamp_s, duration_s)
+    # TODO: [TRACING] Async http transport
     http_transport(thrift_objs_in_bytes([span]))
 
-    params = {'timestamp_s': timestamp_s,
-              'duration_s': duration_s,
-              **kwargs}
-    logger_log_span(span_id, parent_span_id, trace_id, span_name, annotations,
-                    binary_annotations, **params)
+    params = {'timestamp_s': timestamp_s, 'duration_s': duration_s, **kwargs}
+    # TODO: [TRACING] Log in parsable format
+    logger_log_span(span_id, parent_span_id, trace_id, span_name, annotations, binary_annotations,
+                    **params)
 
 
-class FanRecorder(InMemoryRecorder):
+class BaseFanRecorder(InMemoryRecorder):
     def __init__(self, name, log_span):
         super().__init__()
         self.name = name
         self.log_span = log_span
 
-    def record_span(self, span):
+    def span_params(self, span, transport):
         global EP
         if not EP:
             EP = create_endpoint(port=80, service_name=self.name, host=MY_IP)
 
         ctx = span.context
-        timing = {'ss': span.start_time,
-                  'sr': span.start_time + span.duration}
+        timing = {'ss': span.start_time, 'sr': span.start_time + span.duration}
         annotations = annotation_list_builder(timing, EP)
-        attrs = ZipkinAttrs(trace_id=hex(ctx.trace_id)[2:],
-                            span_id=hex(ctx.span_id)[2:],
-                            parent_span_id=span.parent_id and hex(span.parent_id)[2:],
-                            flags=0,
-                            is_sampled=True)
-        params = {
+        attrs = ZipkinAttrs(
+            trace_id=hex(ctx.trace_id)[2:],
+            span_id=hex(ctx.span_id)[2:],
+            parent_span_id=span.parent_id and hex(span.parent_id)[2:],
+            flags=0,
+            is_sampled=True
+        )
+
+        return {
             'zipkin_attrs': attrs,
             'trace_id': hex(ctx.trace_id)[2:],
             'span_id': hex(ctx.span_id)[2:],
@@ -87,14 +88,16 @@ class FanRecorder(InMemoryRecorder):
             'service_name': self.name,
             'span_name': span.operation_name or 'no_name',
             'annotations': annotations,
-            'binary_annotations': binary_annotation_list_builder({**span.context.baggage,
-                                                                  **span.tags}, EP),
-            'transport_handler': http_transport,
+            'binary_annotations': binary_annotation_list_builder({**span.context.baggage, **span.tags}, EP),
+            'transport_handler': transport,  # TODO: [TRACING] Do we need this (only for log)?
             'timestamp_s': span.start_time,
             'duration_s': span.duration,
         }
 
-        self.log_span(**params)
+
+class FanRecorder(BaseFanRecorder):
+    def record_span(self, span):
+        self.log_span(**self.span_params(span, http_transport))
         return super().record_span(span)
 
 
@@ -122,6 +125,7 @@ def cache_discovery(fun):
             return discovery
         discovery = fun(*args, **kwargs)
         return discovery
+
     return wrapped
 
 

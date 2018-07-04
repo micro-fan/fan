@@ -3,7 +3,7 @@ from fan.service import Service
 
 
 class Context:
-    def __init__(self, discovery, service=None, parent=None, name=None, baggage={}):
+    def __init__(self, discovery, service=None, parent=None, name=None, baggage=None):
         self.discovery = discovery
         if service:
             assert isinstance(service, Service), service
@@ -14,8 +14,7 @@ class Context:
             parent_context = parent.span.context
         else:
             parent_context = parent
-        self.span = discovery.tracer.start_span(child_of=parent_context,
-                                                operation_name=name)
+        self.span = discovery.tracer.start_span(child_of=parent_context, operation_name=name)
         if baggage:
             for k, v in baggage.items():
                 self.span.set_baggage_item(k, v)
@@ -66,13 +65,13 @@ class AsyncContext(Context):
         so you should not do that in services
         """
         assert self._entered, 'You must enter context before call .rpc'
-        return RPC(self, async=True)
+        return RPC(self, async_caller=True)
 
     async def pre_call(self):
         pass
 
     async def post_call(self):
-        self.span.finish()
+        await self.span.finish()
 
     async def __aenter__(self, *args):
         self._entered = True
