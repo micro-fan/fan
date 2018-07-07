@@ -1,3 +1,5 @@
+# TODO: Move to separate module
+
 import asyncio
 import logging
 import os
@@ -83,7 +85,12 @@ class AbstractTaskWorker:
 
 
 class SanicServiceHelper:
-    def __init__(self, name, host, port):
+    DEFAULT_BAGGAGE_HEADERS = {
+        'HTTP_INSTALLATION_ID': 'INSTALLATION_ID',
+        'HTTP_SESSION_ID': 'SESSION_ID',
+    }
+
+    def __init__(self, name, host, port, **kwargs):
         self._host = host
         self._port = port
         self.sanic_server = None
@@ -91,6 +98,7 @@ class SanicServiceHelper:
         self.fan_reg = SanicRegister(name, port=self._port)
         self.task_classes = []
         self.workers = []
+        self.baggage_headers = kwargs.get('baggage_headers', self.DEFAULT_BAGGAGE_HEADERS)
 
     def add_endpoint(self, handler, name, url, method, **kwargs):  # TODO: url arguments
         self.app.add_route(handler, url, methods=[method])
@@ -99,17 +107,85 @@ class SanicServiceHelper:
     def add_task(self, task_class: Type[AbstractTaskWorker]):
         self.task_classes.append(task_class)
 
-    def run(self, **kwargs):  # TODO: Do we really need this
+    def add_exception_handler(self, handler):
+        self.app.error_handler.add(Exception, handler)
+
+    def prepare_app(self, loop):
+        def fan_exception_handler(request, exception):
+            return _inner_handler(request, exception)
+
+        def _inner_handler(request, exception):
+            request['fan_exc_info'] = exception
+
+            # Temporally remove fan_handler from handlers
+            # TODO: [TRACING] Think about better way to override error handling
+            new_handlers = []
+            for exc, hdl in self.app.error_handler.handlers:
+                if hdl != fan_exception_handler:
+                    new_handlers.append((exc, hdl))
+            self.app.error_handler.handlers[:] = new_handlers
+
+            result = self.app.error_handler.response(request=request, exception=exception)
+
+            self.add_exception_handler(fan_exception_handler)
+            return result
+
+        self.add_exception_handler(fan_exception_handler)
+
+        @self.app.middleware('request')
+        async def fan_sanic_on_request(request):
+            if request.get('fan_ctx'):
+                return
+
+            from fan.asynchronous import get_discovery, AsyncContext
+
+            discovery = await get_discovery(name=self.app.name, loop=loop)
+            tracer = discovery.tracer
+
+            span_context = tracer.extract('http', request.headers)
+            name = '{} {}'.format(request.method, request.path)
+            if span_context:
+                 ctx = AsyncContext(discovery, None, span_context, name)
+            else:
+                # TODO: Extract same code for django and sanic
+                baggage = {}
+                for k, v in self.baggage_headers.items():
+                    h = request.headers.get(k)
+                    if h is not None:
+                        baggage[v] = h
+                ctx = AsyncContext(discovery, None, None, name, baggage)
+
+            # TODO: [TRACING] Update vars for logs
+            #     update_vars(ctx, request)
+
+            await ctx.__aenter__()
+            request['fan_ctx'] = ctx
+
+        @self.app.middleware('response')
+        async def fan_sanic_on_response(request, response):
+            ctx = request.get('fan_ctx')
+            if ctx:
+                exc_info = request.get('fan_exc_info')
+                await ctx.__aexit__(exc_info and type(exc_info), exc_info and str(exc_info), None)
+
+    def _run(self, **kwargs):  # TODO: [TRACING] Do we really need this. See new run function
         for task_class in self.task_classes:
             self.app.add_task(task_class.deferred_task(app=self.app))
         self.app.add_task(self.fan_reg.register(self.app))
+        self.prepare_app(self.app.loop)  # TODO: [TRACING] Doesn't works without loop
         self.app.run(host=self._host, port=self._port, **kwargs)
+
+    def run(self, **kwargs):
+        loop = kwargs.get('loop') or asyncio.get_event_loop()
+        asyncio.ensure_future(self.async_run(loop=loop, **kwargs), loop=loop)
+        loop.run_forever()
 
     async def async_run(self, loop=None, **kwargs):
         loop = loop or asyncio.get_event_loop()
         for task_class in self.task_classes:
             self.workers.append(task_class.task(loop=loop))
         server = self.app.create_server(host=self._host, port=self._port, **kwargs)
+        self.prepare_app(loop=loop)
         self.sanic_server = asyncio.ensure_future(server, loop=loop)
         await self.fan_reg.register(loop=loop)
 
