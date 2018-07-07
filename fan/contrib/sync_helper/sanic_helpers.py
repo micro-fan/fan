@@ -1,4 +1,4 @@
-# TODO: Move to separate module
+# TODO: Move sanic service helper to separate module
 
 import asyncio
 import logging
@@ -7,6 +7,7 @@ from typing import Type
 
 from sanic import Sanic
 
+from fan.asynchronous import get_discovery, AsyncContext
 from fan.contrib.sync_helper import SyncHelper
 
 
@@ -61,7 +62,7 @@ class AbstractTaskWorker:
     def __init__(self, loop):
         self.idle_timeout = 1
         self.loop = loop
-        self.stopping = False  # TODO: Graceful stopping/restarting
+        self.stopping = False
         self.task = self.loop.create_task(self.worker_loop())
 
     async def worker_loop(self):
@@ -118,7 +119,7 @@ class SanicServiceHelper:
             request['fan_exc_info'] = exception
 
             # Temporally remove fan_handler from handlers
-            # TODO: [TRACING] Think about better way to override error handling
+            # TODO: Think about better way to override error handling
             new_handlers = []
             for exc, hdl in self.app.error_handler.handlers:
                 if hdl != fan_exception_handler:
@@ -137,8 +138,6 @@ class SanicServiceHelper:
             if request.get('fan_ctx'):
                 return
 
-            from fan.asynchronous import get_discovery, AsyncContext
-
             discovery = await get_discovery(name=self.app.name, loop=loop)
             tracer = discovery.tracer
 
@@ -155,9 +154,6 @@ class SanicServiceHelper:
                         baggage[v] = h
                 ctx = AsyncContext(discovery, None, None, name, baggage)
 
-            # TODO: [TRACING] Update vars for logs
-            #     update_vars(ctx, request)
-
             await ctx.__aenter__()
             request['fan_ctx'] = ctx
 
@@ -167,13 +163,6 @@ class SanicServiceHelper:
             if ctx:
                 exc_info = request.get('fan_exc_info')
                 await ctx.__aexit__(exc_info and type(exc_info), exc_info and str(exc_info), None)
-
-    def _run(self, **kwargs):  # TODO: [TRACING] Do we really need this. See new run function
-        for task_class in self.task_classes:
-            self.app.add_task(task_class.deferred_task(app=self.app))
-        self.app.add_task(self.fan_reg.register(self.app))
-        self.prepare_app(self.app.loop)  # TODO: [TRACING] Doesn't works without loop
-        self.app.run(host=self._host, port=self._port, **kwargs)
 
     def run(self, **kwargs):
         loop = kwargs.get('loop') or asyncio.get_event_loop()

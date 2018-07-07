@@ -8,7 +8,7 @@ from functools import wraps
 
 import requests
 from basictracer import BasicTracer
-from basictracer.recorder import InMemoryRecorder
+from basictracer.recorder import SpanRecorder
 from py_zipkin.thrift import (annotation_list_builder, create_endpoint,
                               binary_annotation_list_builder, create_span, thrift_objs_in_bytes)
 from py_zipkin.zipkin import ZipkinAttrs
@@ -34,70 +34,92 @@ def http_transport(encoded_span):
     )
 
 
-MY_IP = socket.gethostbyname(socket.gethostname())
-EP = None
 log = logging.getLogger('fan.sync')
-
-
-# TODO: [TRACING] Logging refactoring
-def logger_log_span(span_id, parent_span_id, trace_id, span_name, annotations, binary_annotations,
-                    **kwargs):
-    log.info('Log span: {}'.format(locals()))
 
 
 def zipkin_log_span(span_id, parent_span_id, trace_id, span_name, annotations, binary_annotations,
                     timestamp_s, duration_s, **kwargs):
     span = create_span(span_id, parent_span_id, trace_id, span_name, annotations,
                        binary_annotations, timestamp_s, duration_s)
-    # TODO: [TRACING] Async http transport
     http_transport(thrift_objs_in_bytes([span]))
 
-    params = {'timestamp_s': timestamp_s, 'duration_s': duration_s, **kwargs}
-    # TODO: [TRACING] Log in parsable format
-    logger_log_span(span_id, parent_span_id, trace_id, span_name, annotations, binary_annotations,
-                    **params)
 
+class BaseFanRecorder(SpanRecorder):
+    _endpoint = None
+    my_ip = socket.gethostbyname(socket.gethostname())
 
-class BaseFanRecorder(InMemoryRecorder):
-    def __init__(self, name, log_span):
+    def __init__(self, name, send_to_zipkin):
         super().__init__()
         self.name = name
-        self.log_span = log_span
+        self.send_to_zipkin = send_to_zipkin
 
-    def span_params(self, span, transport):
-        global EP
-        if not EP:
-            EP = create_endpoint(port=80, service_name=self.name, host=MY_IP)
+    @property
+    def endpoint_info(self):
+        return {
+            'port': 80,
+            'service_name': self.name,
+            'host': self.my_ip,
+        }
 
-        ctx = span.context
-        timing = {'ss': span.start_time, 'sr': span.start_time + span.duration}
-        annotations = annotation_list_builder(timing, EP)
-        attrs = ZipkinAttrs(
-            trace_id=hex(ctx.trace_id)[2:],
-            span_id=hex(ctx.span_id)[2:],
-            parent_span_id=span.parent_id and hex(span.parent_id)[2:],
-            flags=0,
-            is_sampled=True
+    @property
+    def endpoint(self):
+        if not self._endpoint:
+            self._endpoint = create_endpoint(**self.endpoint_info)
+        return self._endpoint
+
+    def zipkin_span_params(self, span):
+        span_params = self.log_span_params(span)
+
+        timing = {
+            'ss': span.start_time,
+            'sr': span.start_time + span.duration
+        }
+        annotations = annotation_list_builder(timing, self.endpoint)
+        zipkin_attrs = ZipkinAttrs(
+            trace_id=span_params['trace_id'],
+            span_id=span_params['span_id'],
+            parent_span_id=span_params['parent_span_id'],
+            flags=span_params['flags'],
+            is_sampled=span_params['is_sampled']
         )
 
         return {
-            'zipkin_attrs': attrs,
+            **span_params,
+            'zipkin_attrs': zipkin_attrs,
+            'annotations': annotations,
+            'binary_annotations': binary_annotation_list_builder({
+                **span.context.baggage,
+                **span.tags
+            }, self.endpoint),
+        }
+
+    def log_span_params(self, span):
+        ctx = span.context
+        return {
             'trace_id': hex(ctx.trace_id)[2:],
             'span_id': hex(ctx.span_id)[2:],
             'parent_span_id': span.parent_id and hex(span.parent_id)[2:],
             'service_name': self.name,
             'span_name': span.operation_name or 'no_name',
-            'annotations': annotations,
-            'binary_annotations': binary_annotation_list_builder({**span.context.baggage, **span.tags}, EP),
-            'transport_handler': transport,  # TODO: [TRACING] Do we need this (only for log)?
+
+            'flags': 0,  # for ZipkinAttrs
+            'is_sampled': True,  # for ZipkinAttrs
+            'endpoint': self.endpoint_info,  # for annotation
+
             'timestamp_s': span.start_time,
             'duration_s': span.duration,
+            'span_context_baggage': span.context.baggage,
+            'span_context_tags': span.tags,
         }
 
 
 class FanRecorder(BaseFanRecorder):
     def record_span(self, span):
-        self.log_span(**self.span_params(span, http_transport))
+        if self.send_to_zipkin:
+            zipkin_log_span(**self.zipkin_span_params(span))
+
+        log.info('Log span: {}'.format(self.log_span_params(span)))
+
         return super().record_span(span)
 
 
@@ -105,14 +127,8 @@ def get_tracer(name=None):
     global tracer
     if tracer:
         return tracer
-    if not name:
-        name = 'no_name'
 
-    if ZIPKIN:
-        log_span = zipkin_log_span
-    else:
-        log_span = logger_log_span
-    recorder = FanRecorder(name, log_span)
+    recorder = FanRecorder(name or 'no_name', send_to_zipkin=ZIPKIN)
     tracer = BasicTracer(recorder)
     return tracer
 
