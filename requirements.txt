@@ -10,4 +10,4 @@ sanic==0.7.0
 aiohttp==3.3.2
 
 aiozk==0.9.0
-tipsi_tools==1.29.0
+tipsi_tools==1.36.0

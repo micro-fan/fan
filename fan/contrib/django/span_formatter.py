@@ -1,5 +1,5 @@
 from fan.contrib.django import VARS
-from tipsi_tools.logging import JSFormatter
+from tipsi_tools.tipsi_logging import JSFormatter
 
 
 class SpanFormatter(JSFormatter):
