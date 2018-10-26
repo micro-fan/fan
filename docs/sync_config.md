@@ -1,16 +1,15 @@
 # Synchronous services helper
 
 The main goal of the helper to provide integration of synchronous services with the discovery service.
-You must use heartbeats to keep connection with zookeeper, so it's required to use separate threads or processes (comments?).
-Since wsgi services can be terminated/restarted at any time - it's a better choice to keep the functionality in
-a separate process (which functionality?).
+You must use heartbeats to keep connection with zookeeper, so they will live either in a separate thread or a process.
+As an example, wsgi services can be terminated/restarted at any time - so hearbeat should be performed in a separate process.
 
-Ideally the helper should:
+The services functionality:
 
-* Read their own config
-* Launch a synchronous service
-* Check a synchronous service state, let's say calling ping/status methods
-* Register service in discovery
+* To read their own config
+* To launch a synchronous service
+* To register service in discovery
+* To check a synchronous service state, let's say calling ping/status methods
 
 Other responsibilities of the helper are config generation from templates, sending information to the discovery service,
  and watching for changes.
