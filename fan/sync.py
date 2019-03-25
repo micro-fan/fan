@@ -10,7 +10,8 @@ import requests
 from basictracer import BasicTracer
 from basictracer.recorder import SpanRecorder
 from py_zipkin.thrift import (annotation_list_builder, create_endpoint,
-                              binary_annotation_list_builder, create_span, thrift_objs_in_bytes)
+                              binary_annotation_list_builder, create_span, span_to_bytes,
+                              encode_bytes_list)
 from py_zipkin.zipkin import ZipkinAttrs
 
 from fan.context import Context
@@ -41,7 +42,7 @@ def zipkin_log_span(span_id, parent_span_id, trace_id, span_name, annotations, b
                     timestamp_s, duration_s, **kwargs):
     span = create_span(span_id, parent_span_id, trace_id, span_name, annotations,
                        binary_annotations, timestamp_s, duration_s)
-    http_transport(thrift_objs_in_bytes([span]))
+    http_transport(encode_bytes_list([span_to_bytes(span)]))
 
 
 class BaseFanRecorder(SpanRecorder):
@@ -58,7 +59,7 @@ class BaseFanRecorder(SpanRecorder):
         return {
             'port': 80,
             'service_name': self.name,
-            'host': self.my_ip,
+            'ipv4': self.my_ip,
         }
 
     @property

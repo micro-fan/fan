@@ -11,7 +11,7 @@ import time
 import aiohttp
 from basictracer import BasicTracer
 from basictracer.span import BasicSpan
-from py_zipkin.thrift import create_span, thrift_objs_in_bytes
+from py_zipkin.thrift import create_span, span_to_bytes, encode_bytes_list
 
 from fan.context import AsyncContext
 from fan.contrib.aio.discovery import LazyAiozkDiscovery
@@ -49,7 +49,7 @@ async def async_zipkin_log_span(span_id, parent_span_id, trace_id, span_name, an
                                 binary_annotations, timestamp_s, duration_s, **kwargs):
     span = create_span(span_id, parent_span_id, trace_id, span_name, annotations,
                        binary_annotations, timestamp_s, duration_s)
-    await async_http_transport(thrift_objs_in_bytes([span]))
+    await async_http_transport(encode_bytes_list([span_to_bytes(span)]))
 
 
 class AsyncFanRecorder(BaseFanRecorder):

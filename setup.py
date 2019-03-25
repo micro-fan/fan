@@ -29,7 +29,7 @@ setup(
         'requests',
         'kazoo',
         'tipsi_tools>=1.36.0',
-        'py-zipkin<0.12.0,>=0.10.1',
+        'py-zipkin>=0.18.0,<1.0.0',
         'aiohttp',
         'sanic',
     ],
