@@ -9,6 +9,7 @@ from fan.remote import ProxyEndpoint
 
 
 VSN_RE = re.compile(r'^\d+(\.\d+){,2}$')
+CONN_TIMEOUT = 5
 
 
 class KazooWrapper:
@@ -20,16 +21,18 @@ class KazooWrapper:
 
     def __init__(self, chroot=None, *args, **kwargs):
         self.zk = KazooClient(*args, **kwargs)
-        self._started = False
         self.chroot = chroot
 
-    def start(self):
+    @property
+    def _started(self):
+        return self.zk.connected
+
+    def start(self, timeout=CONN_TIMEOUT):
         self.log.debug('Connect')
-        self.zk.start()
+        self.zk.start(timeout=timeout)
         if self.chroot:
             self.zk.ensure_path(self.chroot)
             self.zk.chroot = self.chroot
-        self._started = True
 
     def stop(self):
         if self._started:
