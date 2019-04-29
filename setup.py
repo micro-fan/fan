@@ -28,7 +28,7 @@ setup(
         'basictracer',
         'requests',
         'kazoo',
-        'tipsi_tools>=1.36.0',
+        'tipsi_tools[logging]>=1.43.1',
         'py-zipkin>=0.18.0,<1.0.0',
         'aiohttp',
         'sanic',

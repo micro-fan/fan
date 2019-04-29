@@ -5,6 +5,7 @@ import sys
 import yaml
 
 from fan.contrib.sync_helper import SyncHelper
+from tipsi_tools.tipsi_logging import setup_logger
 
 
 R = re.compile('%\{(.*?)\}')
@@ -59,6 +60,9 @@ def main():
     loop.run_forever()
 
 
-
 if __name__ == '__main__':
+    if 'LOG_DIR' not in os.environ:
+        os.makedirs('logs', exists_ok=True)
+        os.environ['LOG_DIR'] = './logs'
+    setup_logger('fan')
     main()
