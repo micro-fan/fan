@@ -46,6 +46,11 @@ def setup_local_ip():
 
 
 def main():
+    if 'LOG_DIR' not in os.environ:
+        os.makedirs('logs', exists_ok=True)
+        os.environ['LOG_DIR'] = './logs'
+    setup_logger('fan')
+
     args = sys.argv[1:]
     assert len(args) == 1, 'Give yaml config name'
     zk_config = os.environ.get('ZK_HOST')
@@ -61,8 +66,4 @@ def main():
 
 
 if __name__ == '__main__':
-    if 'LOG_DIR' not in os.environ:
-        os.makedirs('logs', exists_ok=True)
-        os.environ['LOG_DIR'] = './logs'
-    setup_logger('fan')
     main()
