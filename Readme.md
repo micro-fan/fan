@@ -1,6 +1,6 @@
 # Fan microservice framework [IN DEVELOPMENT]
 
-[![Build Status](https://travis-ci.org/tipsi/fan.svg?branch=master)](https://travis-ci.org/tipsi/fan)
+[![Build Status](https://travis-ci.org/micro-fan/fan.svg?branch=master)](https://travis-ci.org/micro-fan/fan)
 
 # Use cases list
 
