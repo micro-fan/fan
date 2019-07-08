@@ -13,7 +13,7 @@ services:
       - 5672
 
   zk:
-    image: jplock/zookeeper:3.5.2-alpha
+    image: zookeeper:3.5.5
     ports:
       - 2181
 

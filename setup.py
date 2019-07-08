@@ -23,12 +23,12 @@ setup(
         ]
     },
     install_requires=[
-        'aiozk',
+        'aiozk>=0.15',
         'opentracing',
         'basictracer',
         'requests',
         'kazoo',
-        'tipsi_tools[logging]>=1.43.1',
+        'tipsi_tools[logging]>=1.49.0',
         'py-zipkin>=0.18.0,<1.0.0',
         'aiohttp',
         'sanic',
