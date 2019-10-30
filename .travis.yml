@@ -11,5 +11,7 @@ services:
 install:
   - docker-compose build
 
+env:
+  - CI=true
 script:
   - ./test-runner.sh

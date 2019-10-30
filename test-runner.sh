@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
 # run tests through docker-compose
+if [ -z "$CI" ]; then
+    docker-compose build || exit 1
+fi
+
+docker-compose down -v
 docker-compose up --abort-on-container-exit
 
 # check last docker-compose status
