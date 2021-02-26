@@ -7,7 +7,7 @@ pyyaml==5.1
 kazoo==2.4.0
 py-zipkin<1.0.0,>=0.18.1
 sanic==0.7.0
-aiohttp==3.3.2
+aiohttp==3.7.4
 
 aiozk==0.15.0
 tipsi_tools==1.49.0
