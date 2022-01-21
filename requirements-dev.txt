@@ -1,5 +1,5 @@
 -r requirements.txt
-ipython==7.9.0
+ipython==7.16.3
 
 pytest==5.2.*
 pytest-sanic==1.1.2
